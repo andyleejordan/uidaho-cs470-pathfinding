@@ -1,0 +1,130 @@
+\documentclass[12pt, letter]{scrartcl}
+\usepackage[english]{babel}
+\usepackage{sectsty}
+\allsectionsfont{\centering \normalfont\scshape}
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+\fancyhead{}
+\fancyfoot[L]{}
+\fancyfoot[C]{}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{13.6pt}
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}}
+
+\title{	
+\normalfont \normalsize 
+\textsc{University of Idaho: Computer Science} \\ [25pt]
+\horrule{0.5pt} \\[0.4cm]
+\huge Project 1a: Pathfinding Part 1 \\
+\horrule{2pt} \\[0.5cm]
+}
+\author{Andrew Schwartzmeyer}
+\date{\normalsize\today}
+
+\begin{document}
+\maketitle % Print the title
+
+\section{The Breadth-first Algorithm}
+For Part 1a of the Pathfinding project, we're implementing only the breadth-first algorithm. Breadth-first is an algorithm for small problems only, as it has a time and space complexity both of $O(b\sup{d})$. It is both complete and optimal, in that it will find the solution (if one exists) and it will find the solution with the fewest actions (but does not take cost into account, unless a sorted queue is used).
+
+The algorithm is simple: 
+\begin{enumerate}
+    \item[1. ] Create a fringe list
+    \item[2. ] Queue root node (start state) onto fringe list
+    \item[3. ] \emph{while} fringe list is not empty:
+        \begin{enumerate}
+    \item[4. ] Remove first state from list (do not pop last like a stack)
+    \item[5. ] \emph{if} removed state is goal
+        \begin{enumerate}
+    \item[6. ] \emph{then} return path
+        \end{enumerate}
+    \item[7. ] \emph{else} expand state and add new nodes to list
+        \end{enumerate}
+\end{enumerate}
+
+\section{Pathfinding}
+Given the sample map:
+\begin{verbatim}
+15 20
+7 0
+7 18
+MMMhhffffffffff
+MMMMMhhffffffff
+hMMMhhhffFFFfff
+fhMhffFFFFFFFff
+fhhhffFFFFFFFFF
+ffffFFFFFFFFfff
+rrrrfFFFFFFffff
+fffrrffFFFfffff
+RRffrrrfFFFFfff
+fRffffrFFFFFFff
+fRfffWWWWWFFFFF
+fRffWWWWWWWWFFF
+fRRfffWWWWWWWrr
+ffRRRRffffWWfff
+fffffRRRfffffff
+fffffffRfffffff
+hffffffRRRRRRRR
+Mhhffffffffffff
+Mhhffffffffffff
+MMhhhffffffffff
+\end{verbatim}
+
+My program found this path:
+\begin{verbatim}
+MMMhhff@fffffff
+MMMMMhh*fffffff
+hMMMhhh*fFFFfff
+fhMhffF*FFFFFff
+fhhhffF*FFFFFFF
+ffffFFF*FFFFfff
+rrrrfFF*FFFffff
+fffrrff*FFfffff
+RRffrrr*FFFFfff
+fRff****FFFFFff
+fRf**WWWWWFFFFF
+fRf*WWWWWWWWFFF
+fRR*ffWWWWWWWrr
+ffR*RRffffWWfff
+fff*fRRRfffffff
+fff*fffRfffffff
+hff*fffRRRRRRRR
+Mhh*fffffffffff
+Mhh****$fffffff
+MMhhhffffffffff
+\end{verbatim}
+
+And explored these nodes:
+\begin{verbatim}
+#######@#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+####****#######
+###**##########
+###*##WWWW#####
+###*######WW###
+###*###########
+###*###########
+###*###########
+###*###########
+###*###########
+###****$ff#####
+########fff####
+\end{verbatim}
+
+Where `@' is the starting point, `*' is the path, `\$' is the goal, and `\#' is an explored node.
+
+\section{Results}
+I took care to implement my program with speed in mind, considering both that it is written in Python and using a slow search algorithm. I used tuples and sets wherever possible to eliminate what bottle-necks I could. My program actually ran faster than expected, even with a map quadruple in size, it finished before I had the chance to blink. However, even a 50x50 map is relatively small, and this program in its current iteration will be slow.
+
+It found the path as expected: optimal in regards to actions (but not taking cost into account) but inefficient in its means of getting there. If you look at the explored map, almost every node was touched.
+
+\end{document}
