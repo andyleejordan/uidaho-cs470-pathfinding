@@ -79,9 +79,9 @@ class Pathfinder(Input):
         with open(self.Options().explored, 'w') as f:
             for y in range(0, self.Height()):
                 for x in range(0, self.Width()):
-                    if (x, y) is self.Start():
+                    if (x, y) == self.Start():
                         f.write('@')
-                    elif (x, y) is self.Goal():
+                    elif (x, y) == self.Goal():
                         f.write('$')
                     elif (x, y) in self.Path():
                         f.write('*')
@@ -95,9 +95,9 @@ class Pathfinder(Input):
         with open(self.Options().path, 'w') as f:
             for y in range(0, self.Height()):
                 for x in range(0, self.Width()):
-                    if (x, y) is self.Start():
+                    if (x, y) == self.Start():
                         f.write('@')
-                    elif (x, y) is self.Goal():
+                    elif (x, y) == self.Goal():
                         f.write('$')
                     elif (x, y) in self.Path():
                         f.write('*')
