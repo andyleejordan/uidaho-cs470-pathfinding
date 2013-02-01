@@ -107,20 +107,19 @@ class Pathfinder(Input):
 
     def breadth_first(self):
         """ Finds the path from start to goal."""
-        # TODO: Check water
         parent = {}     # Keeps track of node to parent
         self._Fringe.append(self.Start())  # Start the search
         while self.Fringe():
             node = self._Fringe.pop(0)   # Pop from front: queue
-            if node == self.Goal():       # Found goal
+            if node == self.Goal():      # Found goal
                 self._Explored.add(node) # Save explored nodes
                 self._Path = self._backtrace(parent)     # Find path
                 break
             for adjacent in self._expand(node):
                 if self._is_valid(adjacent):
-                    self._Explored.add(adjacent)     # Save explored nodes
+                    self._Explored.add(adjacent)    # Save explored nodes
                     x, y = adjacent
-                    if self.Map()[y][x] != 'W':
+                    if self.Map()[y][x] != 'W':     # Check if impassable water
                         parent[adjacent] = node
                         self._Fringe.append(adjacent)
 
