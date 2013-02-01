@@ -59,28 +59,19 @@ class BreadFirst(object):
 
     def _search(self):
         self.Fringe.append(self.Start)
-        print('Started search for {} from {}'.format(
-            self.Goal, self.Start))
         while self.Fringe:
             node = self.Fringe.pop(0)
-            print('Popping {} from fringe list!'.format(node))
             if node == self.Goal:
-                print('Found goal {}!'.format(self.Goal))
                 self.Explored.add(node)
                 return self.Explored
             for adjacent in self._expand(node):
-                #print('Exploring adjacent node {}!'.format(adjacent))
                 if (adjacent[0] < self.Size[0] and
                         adjacent[1] < self.Size[1] and
                         adjacent[0] >= 0 and
                         adjacent[1] >= 0 and
                         adjacent not in self.Explored):
-                    #print('Adjacent {} is on map!'.format(adjacent))
                     self.Explored.add(adjacent)
                     self.Fringe.append(adjacent)
-                else:
-                    #print('Adjacent {} is NOT on map!'.format(adjacent))
-                    pass
 
 def parser():
     parser = argparse.ArgumentParser(description='Find a path.')
@@ -98,8 +89,6 @@ def main():
 
     Map = Input(Args.input_map)
     Search = BreadFirst(Map)
-
-    print(Search.Explored)
 
 if __name__ == "__main__":
    sys.exit(main())
