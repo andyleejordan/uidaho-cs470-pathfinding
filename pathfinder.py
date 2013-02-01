@@ -51,11 +51,10 @@ class BreadthFirst(Input):
         return tuple(path)
 
     def _is_valid(self, node):
-        if (node[0] < self.Size[0] and  # Check if valid
-                node[1] < self.Size[1] and
-                node[0] >= 0 and
-                node[1] >= 0 and
-                node not in self.Explored):
+        """ Test if node is valid: i.e. real and on map."""
+        x, y = node
+        if (x < self.Size[0] and y < self.Size[1] and
+                x >= 0 and y >= 0 and node not in self.Explored):
             return True
         else:
             return False
