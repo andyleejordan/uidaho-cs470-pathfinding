@@ -21,7 +21,7 @@ class Input(object):
         """ Makes a tuple of tuple map from contents."""
         input_map = []
         for i in range(0, self.Size[1]):      # size[1] is height
-            input_map.append(tuple(list(contents[i])[0:self.Size[0]]))
+            input_map.append(tuple(list(contents[i])[:self.Size[0]]))
         return tuple(input_map)
 
     def _read_contents(self):
@@ -80,14 +80,32 @@ class BreadFirst(Input):
                 if self._is_valid(adjacent):
                     self.Explored.add(adjacent)     # Save explored nodes
                     x, y = adjacent
-                    parent[adjacent] = node
-                    self.Fringe.append(adjacent)
+                    if self.Map[y][x] != 'W':
+                        parent[adjacent] = node
+                        self.Fringe.append(adjacent)
 
-def print_path(search):
-    #for i in range(0, search.Size]0]):
-        #for j in range(0, search.Size[1]):
-    print(search.Path)
-    print(search.Explored)
+def print_maps(search, options):
+    with open(options.explored, 'w') as f:
+        for y in range(0, search.Size[1]):
+            for x in range(0, search.Size[0]):
+                if (x, y) in search.Explored:
+                    f.write('#')
+                else:
+                    f.write(search.Map[y][x])
+            f.write('\n')
+
+    with open(options.path, 'w') as f:
+        for y in range(0, search.Size[1]):
+            for x in range(0, search.Size[0]):
+                if (x, y) is search.Start:
+                    f.write('@')
+                elif (x, y) is search.Goal:
+                    f.write('$')
+                elif (x, y) in search.Path:
+                    f.write('*')
+                else:
+                    f.write(search.Map[y][x])
+            f.write('\n')
 
 def parser():
     """ This is the option parser."""
@@ -109,7 +127,7 @@ def main():
 
     # Execture search and print results
     Search.search()
-    print_path(Search)
+    print_maps(Search, Options)
 
 if __name__ == "__main__":
    sys.exit(main())
