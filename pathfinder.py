@@ -7,13 +7,10 @@ class Input(object):
     """ Class that parses input."""
     def __init__(self, filename='map.txt'):
         self.Filename = filename
-        self.Width = None
-        self.Height = None
-        self.StartX = None
-        self.StartY = None
-        self.GoalX = None
-        self.GoalY = None
-        self.InputMap = ()
+        self.Size = ()
+        self.Start = ()
+        self.Goal = ()
+        self.Map = ()
         self.Costs = zip(
                 ['R', 'f', 'F', 'h', 'r', 'M', 'W'],
                 [1, 2, 4, 5, 7, 10, False])
@@ -23,8 +20,8 @@ class Input(object):
     def _read_map(self, contents):
         """ Makes a tuple of tuple map from contents."""
         input_map = []
-        for i in range(0, self.Height):      # size[1] is height
-            input_map.append(tuple(list(contents[i])[0:-1]))    # Remove \n
+        for i in range(0, self.Size[1]):      # size[1] is height
+            input_map.append(tuple(list(contents[i])[0:self.Size[0]]))
         return tuple(input_map)
 
     def _read_contents(self):
@@ -32,24 +29,15 @@ class Input(object):
         with open(self.Filename, 'r') as f:
             contents = f.readlines()
 
-        size = [int(i) for i in contents[0].split()]
-        self.Width, self.Height = size[0], size[1]
+        self.Size = tuple([int(i) for i in contents[0].split()])
+        self.Start = tuple([int(i) for i in contents[1].split()])
+        self.Goal = tuple([int(i) for i in contents[2].split()])
+        self.Map = self._read_map(contents[3:])
 
-        start = [int(i) for i in contents[1].split()]
-        self.StartX, self.StartY = start[0], start[1]
-
-        goal = [int(i) for i in contents[2].split()]
-        self.GoalX, self.GoalY= goal[0], goal[1]
-
-        self.InputMap = self._read_map(contents[3:])
-
-class BreadFirst(object):
+class BreadFirst(Input):
     """ Class for bread first search method."""
-    def __init__(self, InputMap):
-        self.Map = InputMap.InputMap
-        self.Size = (InputMap.Width, InputMap.Height)
-        self.Start = (InputMap.StartX, InputMap.StartY)
-        self.Goal = (InputMap.GoalX, InputMap.GoalY)
+    def __init__(self, options):
+        super(BreadFirst, self).__init__(options.input_map)
         self.Fringe = []
         self.Explored = set()
         self.Path = []
@@ -62,10 +50,20 @@ class BreadFirst(object):
         path.reverse()
         return tuple(path)
 
+    def _is_valid(self, node):
+        if (node[0] < self.Size[0] and  # Check if valid
+                node[1] < self.Size[1] and
+                node[0] >= 0 and
+                node[1] >= 0 and
+                node not in self.Explored):
+            return True
+        else:
+            return False
+
     def _expand(self, node):
         """ Returns N, E, S, W coordinates as list."""
         x, y = node[0], node[1]
-        return ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
+        return ((x, y), (x, y+1), (x+1, y), (x, y-1), (x-1, y))
 
     def search(self):
         """ Finds the path from start to goal."""
@@ -79,17 +77,17 @@ class BreadFirst(object):
                 self.Path = self._backtrace(parent)     # Find path
                 break
             for adjacent in self._expand(node):
-                if (adjacent[0] < self.Size[0] and  # Check if valid
-                        adjacent[1] < self.Size[1] and
-                        adjacent[0] >= 0 and
-                        adjacent[1] >= 0 and
-                        adjacent not in self.Explored):
+                if self._is_valid(adjacent):
                     self.Explored.add(adjacent)     # Save explored nodes
-                    parent[adjacent] = node         # Save path
-                    self.Fringe.append(adjacent)    # Add adjacent nodes
+                    x, y = adjacent
+                    parent[adjacent] = node
+                    self.Fringe.append(adjacent)
 
 def print_path(search):
+    #for i in range(0, search.Size]0]):
+        #for j in range(0, search.Size[1]):
     print(search.Path)
+    print(search.Explored)
 
 def parser():
     """ This is the option parser."""
@@ -105,11 +103,9 @@ def parser():
 
 def main():
     # Parse arguments and store in Args
-    Args = parser().parse_args()
-    # Parse input map and store data in Map
-    Map = Input(Args.input_map)
+    Options = parser().parse_args()
     # Create Search object from Map
-    Search = BreadFirst(Map)
+    Search = BreadFirst(Options)
 
     # Execture search and print results
     Search.search()
