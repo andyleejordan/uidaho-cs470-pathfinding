@@ -34,10 +34,10 @@ class Input(object):
         self.Goal = tuple([int(i) for i in contents[2].split()])
         self.Map = self._read_map(contents[3:])
 
-class BreadFirst(Input):
-    """ Class for bread first search method."""
+class BreadthFirst(Input):
+    """ Class for breadth first search method."""
     def __init__(self, options):
-        super(BreadFirst, self).__init__(options.input_map)
+        super(BreadthFirst, self).__init__(options.input_map)
         self.Fringe = []
         self.Explored = set()
         self.Path = []
@@ -129,7 +129,7 @@ def main():
     # Parse arguments and store in Args
     Options = parser().parse_args()
     # Create Search object from Map
-    Search = BreadFirst(Options)
+    Search = BreadthFirst(Options)
 
     # Execture search and print results
     Search.search()
