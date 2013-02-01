@@ -88,7 +88,13 @@ def print_maps(search, options):
     with open(options.explored, 'w') as f:
         for y in range(0, search.Size[1]):
             for x in range(0, search.Size[0]):
-                if (x, y) in search.Explored:
+                if (x, y) is search.Start:
+                    f.write('@')
+                elif (x, y) is search.Goal:
+                    f.write('$')
+                elif (x, y) in search.Path:
+                    f.write('*')
+                elif (x, y) in search.Explored:
                     f.write('#')
                 else:
                     f.write(search.Map[y][x])
