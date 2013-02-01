@@ -17,13 +17,15 @@ class Input(object):
                 ['R', 'f', 'F', 'h', 'r', 'M', 'W'],
                 [1, 2, 4, 5, 7, 10, False])
 
+        self._read_contents()
+
     def _read_map(self, contents):
         input_map = []
         for i in range(0, self.Height):      # size[1] is height
             input_map.append(tuple(list(contents[i])[0:-1]))    # Remove \n
         return tuple(input_map)
 
-    def read_contents(self):
+    def _read_contents(self):
         with open(self.Filename, 'r') as f:
             contents = f.readlines()
 
@@ -37,6 +39,48 @@ class Input(object):
         self.GoalX, self.GoalY= goal[0], goal[1]
 
         self.InputMap = self._read_map(contents[3:])
+
+class BreadFirst(object):
+    def __init__(self, InputMap):
+        self.Map = InputMap.InputMap
+        self.Size = (InputMap.Width, InputMap.Height)
+        self.Start = (InputMap.StartX, InputMap.StartY)
+        self.Goal = (InputMap.GoalX, InputMap.GoalY)
+        self.Fringe = []
+        self.Explored = set()
+        self.Path = []
+
+        self._search()
+
+    def _expand(self, node):
+        """ Returns N, E, S, W coordinates as list."""
+        x, y = node[0], node[1]
+        return ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
+
+    def _search(self):
+        self.Fringe.append(self.Start)
+        print('Started search for {} from {}'.format(
+            self.Goal, self.Start))
+        while self.Fringe:
+            node = self.Fringe.pop(0)
+            print('Popping {} from fringe list!'.format(node))
+            if node == self.Goal:
+                print('Found goal {}!'.format(self.Goal))
+                self.Explored.add(node)
+                return self.Explored
+            for adjacent in self._expand(node):
+                #print('Exploring adjacent node {}!'.format(adjacent))
+                if (adjacent[0] < self.Size[0] and
+                        adjacent[1] < self.Size[1] and
+                        adjacent[0] >= 0 and
+                        adjacent[1] >= 0 and
+                        adjacent not in self.Explored):
+                    #print('Adjacent {} is on map!'.format(adjacent))
+                    self.Explored.add(adjacent)
+                    self.Fringe.append(adjacent)
+                else:
+                    #print('Adjacent {} is NOT on map!'.format(adjacent))
+                    pass
 
 def parser():
     parser = argparse.ArgumentParser(description='Find a path.')
@@ -53,10 +97,9 @@ def main():
     Args = parser().parse_args()
 
     Map = Input(Args.input_map)
-    Map.read_contents()
+    Search = BreadFirst(Map)
 
-    print("Width: {}; height: {}; start: {}, {}; goal: {}, {}".format(
-        Map.Width, Map.Height, Map.StartX, Map.StartY, Map.GoalX, Map.GoalY))
+    print(Search.Explored)
 
 if __name__ == "__main__":
    sys.exit(main())
