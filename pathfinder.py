@@ -50,14 +50,12 @@ class BreadFirst(object):
         self.Explored = set()
         self.Path = []
 
-        self._search()
-
     def _expand(self, node):
         """ Returns N, E, S, W coordinates as list."""
         x, y = node[0], node[1]
         return ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
 
-    def _search(self):
+    def search(self):
         self.Fringe.append(self.Start)
         while self.Fringe:
             node = self.Fringe.pop(0)
@@ -89,6 +87,7 @@ def main():
 
     Map = Input(Args.input_map)
     Search = BreadFirst(Map)
+    Search.search()
 
 if __name__ == "__main__":
    sys.exit(main())
