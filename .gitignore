@@ -33,3 +33,7 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Generated files
+explored.txt
+path.txt
