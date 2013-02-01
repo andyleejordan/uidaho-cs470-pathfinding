@@ -52,6 +52,7 @@ class Pathfinder(Input):
     def Fringe(self): return self._Fringe
     def Explored(self): return self._Explored
     def Path(self): return self._Path
+    def ExploredCount(self): return len(self._Explored)
 
     def _backtrace(self, parent):
         """ Calculates the found path from start to goal."""
@@ -112,14 +113,13 @@ class Pathfinder(Input):
         while self.Fringe():
             node = self._Fringe.pop(0)   # Pop from front: queue
             if node == self.Goal():      # Found goal
-                self._Explored.add(node) # Save explored nodes
                 self._Path = self._backtrace(parent)     # Find path
                 break
             for adjacent in self._expand(node):
                 if self._is_valid(adjacent):
                     self._Explored.add(adjacent)    # Save explored nodes
                     x, y = adjacent
-                    if self.Map()[y][x] != 'W':     # Check if impassable water
+                    if self.Map()[y][x] != 'W':     # Check if impassable
                         parent[adjacent] = node
                         self._Fringe.append(adjacent)
 
@@ -145,6 +145,11 @@ def main():
     Search.breadth_first()
     Search.print_explored()
     Search.print_path()
+    print(
+"""Started at {}, {} to reach {}, {}, having explored {} nodes.""".format(
+                Search.Start()[0], Search.Start()[1],
+                Search.Goal()[0], Search.Goal()[1],
+                Search.ExploredCount()))
 
 if __name__ == "__main__":
    sys.exit(main())
