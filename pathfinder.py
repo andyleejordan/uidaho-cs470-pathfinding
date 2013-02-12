@@ -11,7 +11,7 @@ class Input(object):
         self._Start = ()
         self._Goal = ()
         self._Map = ()
-        self._Costs = zip( ['R', 'f', 'F', 'h', 'r', 'M', 'W'],
+        self._Costs = zip(['R', 'f', 'F', 'h', 'r', 'M', 'W'],
                 [1, 2, 4, 5, 7, 10, False])
 
     def Width(self): return self._Size[0]
@@ -89,9 +89,23 @@ class Pathfinder(Input):
             return False
 
     def _expand(self, node):
-        """ Returns N, E, S, W coordinates as list."""
+        """ Returns valid N, E, S, W coordinates as list."""
+        result = []
         x, y = node[0], node[1]
-        return ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
+        expanded = ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
+        for node in expanded:
+            if self._is_valid(node):
+                result.append(node)
+        return result
+
+    def _node_cost(self, node):
+        """ Returns the cost of a node."""
+        if _is_valid(node):
+            x, y = node[0], node[1]
+
+    def _sorted_expand(self, node):
+        """ Returns expanded nodes in order from low to high cost."""
+        expanded = self._expand(node)
 
     def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
@@ -135,12 +149,28 @@ class Pathfinder(Input):
                 self._Path = self._backtrace()     # Find path
                 return True
             for adjacent in self._expand(node):
-                if self._is_valid(adjacent):
-                    self._Explored.add(adjacent)    # Save explored nodes
-                    x, y = adjacent
-                    if self.Map()[y][x] != 'W':     # Check if impassable
-                        self._Parent[adjacent] = node
-                        self._Fringe.append(adjacent)
+                self._Explored.add(adjacent)    # Save explored nodes
+                x, y = adjacent
+                if self.Map()[y][x] != 'W':     # Check if impassable
+                    self._Parent[adjacent] = node
+                    self._Fringe.append(adjacent)
+        return False
+
+    def lowest_cost(self):
+        """ Utilizes the breadth first search method coupled with sorted insert."""
+        self._Fringe.append(self.Start())  # Start the search
+        while self.Fringe():
+            node = self._Fringe.pop(0)   # Pop from front: queue
+            self._Explored.add(node)
+            if node == self.Goal():      # Found goal
+                self._Path = self._backtrace()     # Find path
+                return True
+            for adjacent in self._sorted_expand(node):
+                self._Explored.add(adjacent)    # Save explored nodes
+                x, y = adjacent
+                if self.Map()[y][x] != 'W':     # Check if impassable
+                    self._Parent[adjacent] = node
+                    self._Fringe.append(adjacent)
         return False
 
 def parser():
