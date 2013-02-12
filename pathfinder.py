@@ -64,10 +64,6 @@ class Pathfinder(Input):
         """ Prints maps and resets lists."""
         self._print_explored()
         self._print_path()
-        self._Fringe = []
-        self._Explored = set()
-        self._Parent = {}
-        self._Path = []
 
     def _backtrace(self):
         """ Calculates the found path from start to goal."""
@@ -204,8 +200,10 @@ def main():
     # Execute search and print results
     searches = (
         Pathfinder(Options, 'breadth_first'),
+        Pathfinder(Options, 'lowest_cost'),
         Pathfinder(Options, 'iterative_deepening'),
-        Pathfinder(Options, 'lowest_cost'))
+        Pathfinder(Options, 'a_star_1'),
+        Pathfinder(Options, 'a_star_2'))
 
     for search in searches:
         name = search.Name()
