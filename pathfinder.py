@@ -3,6 +3,8 @@
 import argparse
 import sys
 
+from collections import OrderedDict
+
 class Input(object):
     """ Class object to parse input."""
     def __init__(self, filename='map.txt'):
@@ -11,8 +13,8 @@ class Input(object):
         self._Start = ()
         self._Goal = ()
         self._Map = ()
-        self._Costs = zip(['R', 'f', 'F', 'h', 'r', 'M', 'W'],
-                [1, 2, 4, 5, 7, 10, False])
+        self._Costs = dict(zip(['R', 'f', 'F', 'h', 'r', 'M', 'W'],
+                [1, 2, 4, 5, 7, 10, False]))
 
     def Width(self): return self._Size[0]
     def Height(self): return self._Size[1]
@@ -79,11 +81,13 @@ class Pathfinder(Input):
         return tuple(path)
 
     def _is_valid(self, node):
-        """ Test if node is valid: i.e. real and on map."""
+        """ Test if node is valid: i.e. real, on map, not explored, not in
+        fringe, and not impassable water."""
         x, y = node
         if (x < self.Width() and y < self.Height() and
                 x >= 0 and y >= 0 and node not in self.Explored()
-                and node not in self.Fringe()):
+                and node not in self.Fringe()
+                and self._node_cost(node)):
             return True
         else:
             return False
@@ -100,12 +104,15 @@ class Pathfinder(Input):
 
     def _node_cost(self, node):
         """ Returns the cost of a node."""
-        if _is_valid(node):
-            x, y = node[0], node[1]
+        x, y = node[0], node[1]
+        return self.Costs()[self.Map()[y][x]]
 
     def _sorted_expand(self, node):
         """ Returns expanded nodes in order from low to high cost."""
-        expanded = self._expand(node)
+        expanded = self._expand(node)                       # Get adjacent nodes
+        costs = {i: self._node_cost(i) for i in expanded}   # Add costs
+        ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1])) # Sort
+        return tuple(ordered.keys())                # Return nodes as tuple
 
     def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
@@ -151,9 +158,8 @@ class Pathfinder(Input):
             for adjacent in self._expand(node):
                 self._Explored.add(adjacent)    # Save explored nodes
                 x, y = adjacent
-                if self.Map()[y][x] != 'W':     # Check if impassable
-                    self._Parent[adjacent] = node
-                    self._Fringe.append(adjacent)
+                self._Parent[adjacent] = node
+                self._Fringe.append(adjacent)
         return False
 
     def lowest_cost(self):
@@ -168,9 +174,8 @@ class Pathfinder(Input):
             for adjacent in self._sorted_expand(node):
                 self._Explored.add(adjacent)    # Save explored nodes
                 x, y = adjacent
-                if self.Map()[y][x] != 'W':     # Check if impassable
-                    self._Parent[adjacent] = node
-                    self._Fringe.append(adjacent)
+                self._Parent[adjacent] = node
+                self._Fringe.append(adjacent)
         return False
 
 def parser():
@@ -192,11 +197,17 @@ def main():
     Search = Pathfinder(Options)
 
     # Execture search and print results
-    if Search.breadth_first():
-        print("Breadth first method found path.")
+    #if Search.breadth_first():
+        #print("Breadth first method found path.")
+        #Search.finish()
+    #else:
+        #print("Breadth first method failed to find path.")
+
+    if Search.lowest_cost():
+        print("Lowest cost method found path.")
         Search.finish()
     else:
-        print("Breadth first method failed to find path.")
+        print("Lowest cost method failed to find path.")
 
 if __name__ == "__main__":
    sys.exit(main())
