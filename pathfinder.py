@@ -4,7 +4,7 @@ import argparse
 import sys
 
 class Input(object):
-    """ Class that parses input."""
+    """ Class object to parse input."""
     def __init__(self, filename='map.txt'):
         self._Filename = filename
         self._Size = ()
@@ -39,6 +39,7 @@ class Input(object):
         self._Map = self._read_map(contents[3:])
 
 class Pathfinder(Input):
+    """ Class object to find path using assorted search methods."""
     def __init__(self, options):
         super().__init__(options.input_map)
         super()._read_contents()
@@ -74,9 +75,10 @@ class Pathfinder(Input):
     def _expand(self, node):
         """ Returns N, E, S, W coordinates as list."""
         x, y = node[0], node[1]
-        return ((x, y), (x, y+1), (x+1, y), (x, y-1), (x-1, y))
+        return ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
 
     def print_explored(self):
+        """ Prints an ASCII map of explored nodes."""
         with open(self.Options().explored, 'w') as f:
             for y in range(0, self.Height()):
                 for x in range(0, self.Width()):
@@ -93,6 +95,7 @@ class Pathfinder(Input):
                 f.write('\n')
 
     def print_path(self):
+        """ Prints an ASCII map of the found path from start to goal."""
         with open(self.Options().path, 'w') as f:
             for y in range(0, self.Height()):
                 for x in range(0, self.Width()):
@@ -107,7 +110,7 @@ class Pathfinder(Input):
                 f.write('\n')
 
     def breadth_first(self):
-        """ Finds the path from start to goal."""
+        """ Utilizes the breadth first search method to find the path."""
         parent = {}     # Keeps track of node to parent
         self._Fringe.append(self.Start())  # Start the search
         while self.Fringe():
