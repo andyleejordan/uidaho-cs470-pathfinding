@@ -57,6 +57,11 @@ class Pathfinder(Input):
 
     def finish(self):
         """ Prints maps and resets lists."""
+        print(
+"""Started at {}, {} to reach {}, {}, having explored {} nodes.""".format(
+                self.Start()[0], self.Start()[1],
+                self.Goal()[0], self.Goal()[1],
+                self.ExploredCount()))
         self._print_explored()
         self._print_path()
         self._Fringe = []
@@ -161,12 +166,6 @@ def main():
         Search.finish()
     else:
         print("Breadth first method failed to find path.")
-
-    print(
-"""Started at {}, {} to reach {}, {}, having explored {} nodes.""".format(
-                Search.Start()[0], Search.Start()[1],
-                Search.Goal()[0], Search.Goal()[1],
-                Search.ExploredCount()))
 
 if __name__ == "__main__":
    sys.exit(main())
