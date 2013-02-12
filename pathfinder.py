@@ -67,7 +67,8 @@ class Pathfinder(Input):
         """ Test if node is valid: i.e. real and on map."""
         x, y = node
         if (x < self.Width() and y < self.Height() and
-                x >= 0 and y >= 0 and node not in self.Explored()):
+                x >= 0 and y >= 0 and node not in self.Explored()
+                and node not in self.Fringe()):
             return True
         else:
             return False
@@ -115,9 +116,10 @@ class Pathfinder(Input):
         self._Fringe.append(self.Start())  # Start the search
         while self.Fringe():
             node = self._Fringe.pop(0)   # Pop from front: queue
+            self._Explored.add(node)
             if node == self.Goal():      # Found goal
                 self._Path = self._backtrace(parent)     # Find path
-                break
+                return True
             for adjacent in self._expand(node):
                 if self._is_valid(adjacent):
                     self._Explored.add(adjacent)    # Save explored nodes
@@ -125,6 +127,7 @@ class Pathfinder(Input):
                     if self.Map()[y][x] != 'W':     # Check if impassable
                         parent[adjacent] = node
                         self._Fringe.append(adjacent)
+        return False
 
 def parser():
     """ This is the option parser."""
@@ -145,9 +148,13 @@ def main():
     Search = Pathfinder(Options)
 
     # Execture search and print results
-    Search.breadth_first()
-    Search.print_explored()
-    Search.print_path()
+    if Search.breadth_first():
+        print("Breadth first method found path.")
+        Search.print_explored()
+        Search.print_path()
+    else:
+        print("Breadth first method failed to find path.")
+
     print(
 """Started at {}, {} to reach {}, {}, having explored {} nodes.""".format(
                 Search.Start()[0], Search.Start()[1],
