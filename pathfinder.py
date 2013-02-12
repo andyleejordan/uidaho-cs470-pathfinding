@@ -42,29 +42,26 @@ class Input(object):
 
 class Pathfinder(Input):
     """ Class object to find path using assorted search methods."""
-    def __init__(self, options):
+    def __init__(self, options, name=None):
         super().__init__(options.input_map)
         super()._read_contents()
 
         self._Options = options
+        self._Name = name
         self._Fringe = []
         self._Explored = set()
         self._Parent = {}
         self._Path = []
 
-    def Options(self): return self._Options
-    def Fringe(self): return self._Fringe
+    def Options(self):  return self._Options
+    def Name(self):     return self._Name
+    def Fringe(self):   return self._Fringe
     def Explored(self): return self._Explored
-    def Path(self): return self._Path
+    def Path(self):     return self._Path
     def ExploredCount(self): return len(self._Explored)
 
-    def finish(self):
+    def Finish(self):
         """ Prints maps and resets lists."""
-        print(
-"""Started at {}, {} to reach {}, {}, having explored {} nodes.""".format(
-                self.Start()[0], self.Start()[1],
-                self.Goal()[0], self.Goal()[1],
-                self.ExploredCount()))
         self._print_explored()
         self._print_path()
         self._Fringe = []
@@ -114,9 +111,17 @@ class Pathfinder(Input):
         ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1])) # Sort
         return tuple(ordered.keys())                # Return nodes as tuple
 
+    def _filename(self, suffix):
+        """ Appends name to suffix with underscore if name is set."""
+        if self.Name():
+            return '_'.join((self.Name(), suffix))
+        else:
+            return suffix
+
     def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
-        with open(self.Options().explored, 'w') as f:
+        filename = self._filename(self.Options().explored)
+        with open(filename, 'w') as f:
             for y in range(0, self.Height()):
                 for x in range(0, self.Width()):
                     if (x, y) == self.Start():
@@ -133,7 +138,8 @@ class Pathfinder(Input):
 
     def _print_path(self):
         """ Prints an ASCII map of the found path from start to goal."""
-        with open(self.Options().path, 'w') as f:
+        filename = self._filename(self.Options().path)
+        with open(filename, 'w') as f:
             for y in range(0, self.Height()):
                 for x in range(0, self.Width()):
                     if (x, y) == self.Start():
@@ -194,20 +200,27 @@ def main():
     # Parse arguments and store in Args
     Options = parser().parse_args()
     # Create Search object from Map
-    Search = Pathfinder(Options)
 
-    # Execture search and print results
-    #if Search.breadth_first():
-        #print("Breadth first method found path.")
-        #Search.finish()
-    #else:
-        #print("Breadth first method failed to find path.")
+    # Execute search and print results
+    searches = (
+        Pathfinder(Options, 'breadth_first'),
+        Pathfinder(Options, 'iterative_deepening'),
+        Pathfinder(Options, 'lowest_cost'))
 
-    if Search.lowest_cost():
-        print("Lowest cost method found path.")
-        Search.finish()
-    else:
-        print("Lowest cost method failed to find path.")
+    for search in searches:
+        name = search.Name()
+        try:
+            result = getattr(search, name)()
+            if result:
+                print(
+"{} method found path from ({}, {}) to ({}, {}), exploring {} nodes.".format(
+                    name, search.Start()[0], search.Start()[1],
+                    search.Goal()[0], search.Goal()[1], search.ExploredCount()))
+                search.Finish()
+            else:
+                print("{} method failed to find path.".format(name))
+        except AttributeError as e:
+            print("Could not find method '{}'".format(name))
 
 if __name__ == "__main__":
    sys.exit(main())
