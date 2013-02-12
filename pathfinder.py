@@ -47,6 +47,7 @@ class Pathfinder(Input):
         self._Options = options
         self._Fringe = []
         self._Explored = set()
+        self._Parent = {}
         self._Path = []
 
     def Options(self): return self._Options
@@ -66,13 +67,14 @@ class Pathfinder(Input):
         self._print_path()
         self._Fringe = []
         self._Explored = set()
+        self._Parent = {}
         self._Path = []
 
-    def _backtrace(self, parent):
+    def _backtrace(self):
         """ Calculates the found path from start to goal."""
         path = [self.Goal()]
         while path[-1] != self.Start():
-            path.append(parent[path[-1]])
+            path.append(self._Parent[path[-1]])
         path.reverse()
         return tuple(path)
 
@@ -125,20 +127,19 @@ class Pathfinder(Input):
 
     def breadth_first(self):
         """ Utilizes the breadth first search method to find the path."""
-        parent = {}     # Keeps track of node to parent
         self._Fringe.append(self.Start())  # Start the search
         while self.Fringe():
             node = self._Fringe.pop(0)   # Pop from front: queue
             self._Explored.add(node)
             if node == self.Goal():      # Found goal
-                self._Path = self._backtrace(parent)     # Find path
+                self._Path = self._backtrace()     # Find path
                 return True
             for adjacent in self._expand(node):
                 if self._is_valid(adjacent):
                     self._Explored.add(adjacent)    # Save explored nodes
                     x, y = adjacent
                     if self.Map()[y][x] != 'W':     # Check if impassable
-                        parent[adjacent] = node
+                        self._Parent[adjacent] = node
                         self._Fringe.append(adjacent)
         return False
 
