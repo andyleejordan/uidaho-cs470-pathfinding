@@ -55,6 +55,14 @@ class Pathfinder(Input):
     def Path(self): return self._Path
     def ExploredCount(self): return len(self._Explored)
 
+    def finish(self):
+        """ Prints maps and resets lists."""
+        self._print_explored()
+        self._print_path()
+        self._Fringe = []
+        self._Explored = set()
+        self._Path = []
+
     def _backtrace(self, parent):
         """ Calculates the found path from start to goal."""
         path = [self.Goal()]
@@ -78,7 +86,7 @@ class Pathfinder(Input):
         x, y = node[0], node[1]
         return ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
 
-    def print_explored(self):
+    def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
         with open(self.Options().explored, 'w') as f:
             for y in range(0, self.Height()):
@@ -95,7 +103,7 @@ class Pathfinder(Input):
                         f.write(self.Map()[y][x])
                 f.write('\n')
 
-    def print_path(self):
+    def _print_path(self):
         """ Prints an ASCII map of the found path from start to goal."""
         with open(self.Options().path, 'w') as f:
             for y in range(0, self.Height()):
@@ -150,8 +158,7 @@ def main():
     # Execture search and print results
     if Search.breadth_first():
         print("Breadth first method found path.")
-        Search.print_explored()
-        Search.print_path()
+        Search.finish()
     else:
         print("Breadth first method failed to find path.")
 
