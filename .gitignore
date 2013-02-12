@@ -35,5 +35,5 @@ nosetests.xml
 .pydevproject
 
 # Generated files
-explored.txt
-path.txt
+*explored.txt
+*path.txt

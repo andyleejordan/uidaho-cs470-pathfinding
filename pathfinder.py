@@ -180,6 +180,10 @@ class Pathfinder(Input):
                 self._Fringe.append(adjacent)
         return False
 
+    def iterative_deepening(self):
+        """ Repeatedly applies depth-limited search with an increasing limit."""
+        pass
+
 def parser():
     """ This is the option parser."""
     # TODO: Add type of search option
