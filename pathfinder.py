@@ -1,19 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import operator
 import sys
 
 from collections import OrderedDict
 
-#sys.setrecursionlimit(10000)
-
-#class Node(object):
-    #""" Class object to represent graph node"""
-    #def __init__(self, parent=None, costs=0):
-        #self.depth = 0
-        #self.coord = (0, 0)
-        #if parent:
-            #self.depth = parent.depth + 1
 
 class Input(object):
     """ Class object to parse input."""
@@ -51,6 +43,103 @@ class Input(object):
         self._goal = tuple([int(i) for i in contents[2].split()])
         self._graph = self._read_map(contents[3:])
 
+
+class PathProblem(object):
+    def __init__(self, input_):
+        self._start = input_.start()
+        self._goal = input_.goal()
+
+    def input_(): return self._input_
+    def start(): return self._start
+    def goal(): return self._goal
+
+    def _is_valid(self, state):
+        """ Test if node is valid: i.e. real, on map, not explored, not in
+        fringe, and not impassable water."""
+        x, y = state
+        if (x < self.input_(.)width() and y < self.input_().height() and
+                x >= 0 and y >= 0 and
+                self.input_().costs()[self.input_().graph()[y][x]]):
+            return True
+        else:
+            return False
+
+    def actions(self, state):
+        """ Returns valid N, E, S, W coordinates as list."""
+        result = []
+        x, y = state[0], state[1]
+        actions = (
+                ('N', (x, y-1)),
+                ('S', (x, y+1)),
+                ('E', (x+1, y)),
+                ('W', (x-1, y)))
+        for action in actions:
+            if self._is_valid(action[1]):
+                result.append(action[0])
+        return result
+
+    def result(self, state, action):
+        if action == 'N':
+            return tuple(map(operator.add, state, (0, -1))
+        if action == 'S':
+            return tuple(map(operator.add, state, (0, 1))
+        if action = 'E':
+            return tuple(map(operator.add, state, (1, 0))
+        if action = 'W':
+            return tuple(map(operator.add, state, (-1, 0))
+        print("Could not find action: {}".format(action))
+
+    def goal_tests(self, state):
+        return state == self.goal()
+
+    def path_cost(self, path_cost, state, action):
+        x, y = self.result(state, action)
+        return (path_cost +
+                self.input_().costs()[self.input_().graph()[y][x]])
+
+
+class Node(object):
+    """ Class object to represent graph node"""
+    def __init__(self, state, parent=None, action=None, path_cost=0)
+        self._depth = 0
+        self._state = state
+        self._parent = parent
+        self._action = action
+        self._path_cost = path_cost
+
+        if parent:
+            self._depth = parent.depth() + 1
+
+    def depth(self): return self._depth
+    def state(self): return self._state
+    def parent(self): return self._parent
+    def action(self): return self._action
+    def path_cost(self): return self.path_cost
+
+    def expand(self, problem):
+        return [self.child_node(problem, action)
+                for action in problem.actions(self.state())]
+
+    def child_node(self, problem, action):
+        next_ = problem.result(self.state(), action)
+        return Node(
+                next_, self, action,
+                problem.path_cost(self.path_cost(), self.state(), action))
+
+    def solution(self):
+        return [node.action() for node in self.path()[1:]]
+
+    def path(self):
+        node, path_back = self, []
+        while node:
+            path_back.append(node)
+            node = node.parent()
+        return list(reversed(path_back))
+
+    def __eq__(self, other):
+        return isinstance(other, Node) and self.state() == other.state()
+
+
 class Pathfinder(Input):
     """ Class object to find path using assorted search methods."""
     def __init__(self, options, name=None):
@@ -59,6 +148,7 @@ class Pathfinder(Input):
 
         self._options = options
         self._name = name
+        self._problem = problem
         self._fringe = []
         self._explored = set()
         self._parent = {}
@@ -66,6 +156,7 @@ class Pathfinder(Input):
 
     def options(self): return self._options
     def name(self): return self._name
+    def problem(self): return self._problem
     def fringe(self): return self._fringe
     def explored(self): return self._explored
     def path(self): return self._path
@@ -84,10 +175,10 @@ class Pathfinder(Input):
         path.reverse()
         return tuple(path)
 
-    def _is_valid(self, node):
+    def _is_valid(self, state):
         """ Test if node is valid: i.e. real, on map, not explored, not in
         fringe, and not impassable water."""
-        x, y = node
+        x, y = state
         if (x < self.width() and y < self.height() and
                 x >= 0 and y >= 0 and
                 self.costs()[self.graph()[y][x]]):
@@ -95,14 +186,14 @@ class Pathfinder(Input):
         else:
             return False
 
-    def _expand(self, node):
+    def _expand(self, state):
         """ Returns valid N, E, S, W coordinates as list."""
         result = []
-        x, y = node[0], node[1]
+        x, y = state[0], state[1]
         expanded = ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
-        for node in expanded:
-            if self._is_valid(node):
-                result.append(node)
+        for state in expanded:
+            if self._is_valid(state):
+                result.append(state)
         return result
 
     def _node_cost(self, node):
@@ -220,45 +311,35 @@ class Pathfinder(Input):
                     self._fringe.append(adjacent)
         return False
 
-    def _depth_limited_search_by_cost_no_avoid(self, limit):
-        """
-        Uses stack instead of queue so is depth-first instead of breadth-first
-        Uses sorted insert (reversed) for action cost accounting
-        Depth limited: checks if depth has reached limit
-        Does NOT avoid repeated states
+    def _depth_limited_search(problem, limit=50):
+        def recursive_dls(node, problem, limit):
+            if problem.goal_test(node.state()):
+                return node
+            elif node.depth() == limit:
+                return 'cutoff'
+            else:
+                cutoff_occurred = False
+                for child in node.expand(problem):
+                    result = recursive_dls(child, problem, limit)
+                    if result == 'cutoff':
+                        cutoff_occurred = True
+                    elif result is not None:
+                        return result
+                if cutoff_occurred:
+                    return 'cutoff'
+                else:
+                    return None
 
-        """
-        self._fringe.append(self.start())
-        depth = 0
-        while self.fringe():
-            if depth == limit:
-                return False
-            depth += 1
-            node = self._fringe.pop()
-            self._explored.add(node)
-            if node == self.goal():
-                self._path = self._backtrace()
-                return True
-            for adjacent in self._sorted_expand(node, reverse=True):
-                if adjacent not in self.fringe():
-                    self._explored.add(adjacent)
-                    self._parent[adjacent] = node
-                    self._fringe.append(adjacent)
-        return False
+    # Body of depth_limited_search:
+    return recursive_dls(Node(problem.start()), problem, limit)
 
-    def iterative_deepening_avoid_repeats(self):
+    def iterative_deepening(self):
         """ Repeatedly applies depth-limited search with an increasing limit."""
+        problem = PathProblem(super())
         for depth in range(sys.maxsize):
-            result = self._depth_limited_search_by_cost(depth)
-            if result:
-                return True
-
-    def iterative_deepening_without_avoid_repeats(self):
-        """ Repeatedly applies depth-limited search with an increasing limit."""
-        for depth in range(sys.maxsize):
-            result = self._depth_limited_search_by_cost_no_avoid(depth)
-            if result:
-                return True
+            result = self._depth_limited_search(problem, depth)
+            if result != 'curoff':
+                return result
 
 def parser():
     """ This is the option parser."""
