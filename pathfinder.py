@@ -8,37 +8,38 @@ from collections import OrderedDict
 class Input(object):
     """ Class object to parse input."""
     def __init__(self, filename='map.txt'):
-        self._Filename = filename
-        self._Size = ()
-        self._Start = ()
-        self._Goal = ()
-        self._Map = ()
-        self._Costs = dict(zip(['R', 'f', 'F', 'h', 'r', 'M', 'W'],
+        self._filename = filename
+        self._size = ()
+        self._start = ()
+        self._goal = ()
+        self._map = ()
+        self._costs = dict(zip(['R', 'f', 'F', 'h', 'r', 'M', 'W'],
                 [1, 2, 4, 5, 7, 10, False]))
 
-    def Width(self): return self._Size[0]
-    def Height(self): return self._Size[1]
-    def Start(self): return self._Start
-    def Goal(self): return self._Goal
-    def Map(self): return self._Map
-    def Costs(self): return self._Costs
+    def filename(self): return self._filename
+    def width(self): return self._size[0]
+    def height(self): return self._size[1]
+    def start(self): return self._start
+    def goal(self): return self._goal
+    def map_(self): return self._map
+    def costs(self): return self._costs
 
     def _read_map(self, contents):
         """ Makes a tuple of tuple map from contents."""
         input_map = []
-        for i in range(0, self.Height()):
-            input_map.append(tuple(list(contents[i])[:self.Width()]))
+        for i in range(0, self.height()):
+            input_map.append(tuple(list(contents[i])[:self.width()]))
         return tuple(input_map)
 
     def _read_contents(self):
         """ Opens map file and grabs size, start, goal, and map."""
-        with open(self._Filename, 'r') as f:
+        with open(self.filename(), 'r') as f:
             contents = f.readlines()
 
-        self._Size = tuple([int(i) for i in contents[0].split()])
-        self._Start = tuple([int(i) for i in contents[1].split()])
-        self._Goal = tuple([int(i) for i in contents[2].split()])
-        self._Map = self._read_map(contents[3:])
+        self._size = tuple([int(i) for i in contents[0].split()])
+        self._start = tuple([int(i) for i in contents[1].split()])
+        self._goal = tuple([int(i) for i in contents[2].split()])
+        self._map = self._read_map(contents[3:])
 
 class Pathfinder(Input):
     """ Class object to find path using assorted search methods."""
@@ -46,30 +47,30 @@ class Pathfinder(Input):
         super().__init__(options.input_map)
         super()._read_contents()
 
-        self._Options = options
-        self._Name = name
-        self._Fringe = []
-        self._Explored = set()
-        self._Parent = {}
-        self._Path = []
+        self._options = options
+        self._name = name
+        self._fringe = []
+        self._explored = set()
+        self._parent = {}
+        self._path = []
 
-    def Options(self):  return self._Options
-    def Name(self):     return self._Name
-    def Fringe(self):   return self._Fringe
-    def Explored(self): return self._Explored
-    def Path(self):     return self._Path
-    def ExploredCount(self): return len(self._Explored)
+    def options(self): return self._options
+    def name(self): return self._name
+    def fringe(self): return self._fringe
+    def explored(self): return self._explored
+    def path(self): return self._path
+    def count(self): return len(self._explored)
 
-    def Finish(self):
+    def finish(self):
         """ Prints maps and resets lists."""
         self._print_explored()
         self._print_path()
 
     def _backtrace(self):
         """ Calculates the found path from start to goal."""
-        path = [self.Goal()]
-        while path[-1] != self.Start():
-            path.append(self._Parent[path[-1]])
+        path = [self.goal()]
+        while path[-1] != self.start():
+            path.append(self._parent[path[-1]])
         path.reverse()
         return tuple(path)
 
@@ -77,9 +78,9 @@ class Pathfinder(Input):
         """ Test if node is valid: i.e. real, on map, not explored, not in
         fringe, and not impassable water."""
         x, y = node
-        if (x < self.Width() and y < self.Height() and
-                x >= 0 and y >= 0 and node not in self.Explored()
-                and node not in self.Fringe()
+        if (x < self.width() and y < self.height() and
+                x >= 0 and y >= 0 and node not in self.explored()
+                and node not in self.fringe()
                 and self._node_cost(node)):
             return True
         else:
@@ -98,91 +99,91 @@ class Pathfinder(Input):
     def _node_cost(self, node):
         """ Returns the cost of a node."""
         x, y = node[0], node[1]
-        return self.Costs()[self.Map()[y][x]]
+        return self.costs()[self.map_()[y][x]]
 
     def _sorted_expand(self, node):
         """ Returns expanded nodes in order from low to high cost."""
-        expanded = self._expand(node)                       # Get adjacent nodes
-        costs = {i: self._node_cost(i) for i in expanded}   # Add costs
-        ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1])) # Sort
-        return tuple(ordered.keys())                # Return nodes as tuple
+        expanded = self._expand(node) # Get adjacent nodes
+        costs = {i: self._node_cost(i) for i in expanded} # Add costs
+        ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1]))
+        return tuple(ordered.keys()) # Return nodes as tuple
 
-    def _filename(self, suffix):
+    def _safe_filename(self, suffix):
         """ Appends name to suffix with underscore if name is set."""
-        if self.Name():
-            return '_'.join((self.Name(), suffix))
+        if self.name():
+            return '_'.join((self.name(), suffix))
         else:
             return suffix
 
     def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
-        filename = self._filename(self.Options().explored)
+        filename = self._safe_filename(self.options().explored)
         with open(filename, 'w') as f:
-            for y in range(0, self.Height()):
-                for x in range(0, self.Width()):
-                    if (x, y) == self.Start():
+            for y in range(0, self.height()):
+                for x in range(0, self.width()):
+                    if (x, y) == self.start():
                         f.write('@')
-                    elif (x, y) == self.Goal():
+                    elif (x, y) == self.goal():
                         f.write('$')
-                    elif (x, y) in self.Path():
+                    elif (x, y) in self.path():
                         f.write('*')
-                    elif (x, y) in self.Explored():
+                    elif (x, y) in self.explored():
                         f.write('#')
                     else:
-                        f.write(self.Map()[y][x])
+                        f.write(self.map_()[y][x])
                 f.write('\n')
 
     def _print_path(self):
         """ Prints an ASCII map of the found path from start to goal."""
-        filename = self._filename(self.Options().path)
+        filename = self._safe_filename(self.options().path)
         with open(filename, 'w') as f:
-            for y in range(0, self.Height()):
-                for x in range(0, self.Width()):
-                    if (x, y) == self.Start():
+            for y in range(0, self.height()):
+                for x in range(0, self.width()):
+                    if (x, y) == self.start():
                         f.write('@')
-                    elif (x, y) == self.Goal():
+                    elif (x, y) == self.goal():
                         f.write('$')
-                    elif (x, y) in self.Path():
+                    elif (x, y) in self.path():
                         f.write('*')
                     else:
-                        f.write(self.Map()[y][x])
+                        f.write(self.map_()[y][x])
                 f.write('\n')
 
     def breadth_first(self):
         """ Utilizes the breadth first search method to find the path."""
-        self._Fringe.append(self.Start())  # Start the search
-        while self.Fringe():
-            node = self._Fringe.pop(0)   # Pop from front: queue
-            self._Explored.add(node)
-            if node == self.Goal():      # Found goal
-                self._Path = self._backtrace()     # Find path
+        self._fringe.append(self.start())  # Start the search
+        while self.fringe():
+            node = self._fringe.pop(0)   # Pop from front: queue
+            self._explored.add(node)
+            if node == self.goal():      # Found goal
+                self._path = self._backtrace()     # Find path
                 return True
             for adjacent in self._expand(node):
-                self._Explored.add(adjacent)    # Save explored nodes
+                self._explored.add(adjacent)    # Save explored nodes
                 x, y = adjacent
-                self._Parent[adjacent] = node
-                self._Fringe.append(adjacent)
+                self._parent[adjacent] = node
+                self._fringe.append(adjacent)
         return False
 
     def lowest_cost(self):
         """ Utilizes the breadth first search method coupled with sorted insert."""
-        self._Fringe.append(self.Start())  # Start the search
-        while self.Fringe():
-            node = self._Fringe.pop(0)   # Pop from front: queue
-            self._Explored.add(node)
-            if node == self.Goal():      # Found goal
-                self._Path = self._backtrace()     # Find path
+        self._fringe.append(self.start())  # Start the search
+        while self.fringe():
+            node = self._fringe.pop(0)   # Pop from front: queue
+            self._explored.add(node)
+            if node == self.goal():      # Found goal
+                self._path = self._backtrace()     # Find path
                 return True
             for adjacent in self._sorted_expand(node):
-                self._Explored.add(adjacent)    # Save explored nodes
+                self._explored.add(adjacent)    # Save explored nodes
                 x, y = adjacent
-                self._Parent[adjacent] = node
-                self._Fringe.append(adjacent)
+                self._parent[adjacent] = node
+                self._fringe.append(adjacent)
         return False
 
     def iterative_deepening(self):
         """ Repeatedly applies depth-limited search with an increasing limit."""
-        pass
+        return False
 
 def parser():
     """ This is the option parser."""
@@ -198,31 +199,34 @@ def parser():
 
 def main():
     # Parse arguments and store in Args
-    Options = parser().parse_args()
+    options = parser().parse_args()
     # Create Search object from Map
 
     # Execute search and print results
     searches = (
-        Pathfinder(Options, 'breadth_first'),
-        Pathfinder(Options, 'lowest_cost'),
-        Pathfinder(Options, 'iterative_deepening'),
-        Pathfinder(Options, 'a_star_1'),
-        Pathfinder(Options, 'a_star_2'))
+        Pathfinder(options, 'breadth_first'),
+        Pathfinder(options, 'lowest_cost'),
+        Pathfinder(options, 'iterative_deepening'),
+        Pathfinder(options, 'a_star_1'),
+        Pathfinder(options, 'a_star_2'))
+
+    success_string = "{} method found path from ({}, {}) to ({}, {}),"
+    success_string += " exploring {} nodes."
+    fail_string = "{} method failed to find path."
 
     for search in searches:
-        name = search.Name()
         try:
-            result = getattr(search, name)()
-            if result:
-                print(
-"{} method found path from ({}, {}) to ({}, {}), exploring {} nodes.".format(
-                    name, search.Start()[0], search.Start()[1],
-                    search.Goal()[0], search.Goal()[1], search.ExploredCount()))
-                search.Finish()
-            else:
-                print("{} method failed to find path.".format(name))
+            result = getattr(search, search.name())()
         except AttributeError as e:
-            print("Could not find method '{}'".format(name))
+            print("Could not find method '{}'".format(search.name()))
+        else:
+            if result:
+                print(success_string.format(
+                    search.name(), search.start()[0], search.start()[1],
+                    search.goal()[0], search.goal()[1], search.count()))
+                search.finish()
+            else:
+                print(fail_string.format(search.name()))
 
 if __name__ == "__main__":
    sys.exit(main())
