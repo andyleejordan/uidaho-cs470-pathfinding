@@ -5,6 +5,8 @@ import sys
 
 from collections import OrderedDict
 
+#sys.setrecursionlimit(10000)
+
 class Input(object):
     """ Class object to parse input."""
     def __init__(self, filename='map.txt'):
@@ -12,7 +14,7 @@ class Input(object):
         self._size = ()
         self._start = ()
         self._goal = ()
-        self._map = ()
+        self._graph = ()
         self._costs = dict(zip(['R', 'f', 'F', 'h', 'r', 'M', 'W'],
                 [1, 2, 4, 5, 7, 10, False]))
 
@@ -21,7 +23,7 @@ class Input(object):
     def height(self): return self._size[1]
     def start(self): return self._start
     def goal(self): return self._goal
-    def map_(self): return self._map
+    def graph(self): return self._graph
     def costs(self): return self._costs
 
     def _read_map(self, contents):
@@ -39,7 +41,7 @@ class Input(object):
         self._size = tuple([int(i) for i in contents[0].split()])
         self._start = tuple([int(i) for i in contents[1].split()])
         self._goal = tuple([int(i) for i in contents[2].split()])
-        self._map = self._read_map(contents[3:])
+        self._graph = self._read_map(contents[3:])
 
 class Pathfinder(Input):
     """ Class object to find path using assorted search methods."""
@@ -79,9 +81,8 @@ class Pathfinder(Input):
         fringe, and not impassable water."""
         x, y = node
         if (x < self.width() and y < self.height() and
-                x >= 0 and y >= 0 and node not in self.explored()
-                and node not in self.fringe()
-                and self._node_cost(node)):
+                x >= 0 and y >= 0 and
+                self.costs()[self.graph()[y][x]] != 'W'):
             return True
         else:
             return False
@@ -99,7 +100,7 @@ class Pathfinder(Input):
     def _node_cost(self, node):
         """ Returns the cost of a node."""
         x, y = node[0], node[1]
-        return self.costs()[self.map_()[y][x]]
+        return self.costs()[self.graph()[y][x]]
 
     def _sorted_expand(self, node):
         """ Returns expanded nodes in order from low to high cost."""
@@ -130,7 +131,7 @@ class Pathfinder(Input):
                     elif (x, y) in self.explored():
                         f.write('#')
                     else:
-                        f.write(self.map_()[y][x])
+                        f.write(self.graph()[y][x])
                 f.write('\n')
 
     def _print_path(self):
@@ -146,11 +147,11 @@ class Pathfinder(Input):
                     elif (x, y) in self.path():
                         f.write('*')
                     else:
-                        f.write(self.map_()[y][x])
+                        f.write(self.graph()[y][x])
                 f.write('\n')
 
     def breadth_first(self):
-        """ Utilizes the breadth first search method to find the path."""
+        """Utilizes the breadth first search method to find the path"""
         self._fringe.append(self.start())  # Start the search
         while self.fringe():
             node = self._fringe.pop(0)   # Pop from front: queue
@@ -159,14 +160,16 @@ class Pathfinder(Input):
                 self._path = self._backtrace()     # Find path
                 return True
             for adjacent in self._expand(node):
-                self._explored.add(adjacent)    # Save explored nodes
-                x, y = adjacent
-                self._parent[adjacent] = node
-                self._fringe.append(adjacent)
+                if (adjacent not in self.explored()
+                        and adjacent not in self.fringe()):
+                    self._explored.add(adjacent)    # Save explored nodes
+                    x, y = adjacent
+                    self._parent[adjacent] = node
+                    self._fringe.append(adjacent)
         return False
 
     def lowest_cost(self):
-        """ Utilizes the breadth first search method coupled with sorted insert."""
+        """Utilizes the breadth first search method coupled with sorted insert"""
         self._fringe.append(self.start())  # Start the search
         while self.fringe():
             node = self._fringe.pop(0)   # Pop from front: queue
@@ -175,15 +178,42 @@ class Pathfinder(Input):
                 self._path = self._backtrace()     # Find path
                 return True
             for adjacent in self._sorted_expand(node):
-                self._explored.add(adjacent)    # Save explored nodes
-                x, y = adjacent
-                self._parent[adjacent] = node
-                self._fringe.append(adjacent)
+                if (adjacent not in self.explored()
+                        and adjacent not in self.fringe()):
+                    self._explored.add(adjacent)    # Save explored nodes
+                    x, y = adjacent
+                    self._parent[adjacent] = node
+                    self._fringe.append(adjacent)
         return False
+
+    def _depth_limited_search(self, depth, limit=50):
+        def _recursive_dls(node, depth, limit):
+            if node == self.goal():
+                self._path = self._backtrace()
+                return True
+            elif depth == limit:
+                return 'cutoff'
+            else:
+                cutoff_occurred = False
+                for adjacent in self._expand(node):
+                    self._explored.add(adjacent)
+                    self._parent[adjacent] = node
+                    result = _recursive_dls(adjacent, depth, limit)
+                    if result == 'cutoff':
+                        cutoff_occurred = True
+                    elif result is not None:
+                        return result
+                return cutoff_occurred
+
+        self._explored.add(self.start())
+        return _recursive_dls(self.start(), depth, limit)
 
     def iterative_deepening(self):
         """ Repeatedly applies depth-limited search with an increasing limit."""
-        return False
+        for depth in range(sys.maxsize):
+            result = self._depth_limited_search(depth)
+            if result != 'cutoff':
+                return result
 
 def parser():
     """ This is the option parser."""
