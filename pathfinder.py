@@ -7,6 +7,14 @@ from collections import OrderedDict
 
 #sys.setrecursionlimit(10000)
 
+#class Node(object):
+    #""" Class object to represent graph node"""
+    #def __init__(self, parent=None, costs=0):
+        #self.depth = 0
+        #self.coord = (0, 0)
+        #if parent:
+            #self.depth = parent.depth + 1
+
 class Input(object):
     """ Class object to parse input."""
     def __init__(self, filename='map.txt'):
@@ -82,7 +90,7 @@ class Pathfinder(Input):
         x, y = node
         if (x < self.width() and y < self.height() and
                 x >= 0 and y >= 0 and
-                self.costs()[self.graph()[y][x]] != 'W'):
+                self.costs()[self.graph()[y][x]]):
             return True
         else:
             return False
@@ -163,7 +171,6 @@ class Pathfinder(Input):
                 if (adjacent not in self.explored()
                         and adjacent not in self.fringe()):
                     self._explored.add(adjacent)    # Save explored nodes
-                    x, y = adjacent
                     self._parent[adjacent] = node
                     self._fringe.append(adjacent)
         return False
@@ -181,38 +188,41 @@ class Pathfinder(Input):
                 if (adjacent not in self.explored()
                         and adjacent not in self.fringe()):
                     self._explored.add(adjacent)    # Save explored nodes
-                    x, y = adjacent
                     self._parent[adjacent] = node
                     self._fringe.append(adjacent)
         return False
 
-    def _depth_limited_search(self, depth, limit=50):
-        def _recursive_dls(node, depth, limit):
+    def _depth_limited_search(self, limit=0):
+        def _recursive_dls(node, limit):
+            print(node)
             if node == self.goal():
-                self._path = self._backtrace()
-                return True
-            elif depth == limit:
+                return node
+            elif limit == 0:
                 return 'cutoff'
             else:
                 cutoff_occurred = False
                 for adjacent in self._expand(node):
-                    self._explored.add(adjacent)
-                    self._parent[adjacent] = node
-                    result = _recursive_dls(adjacent, depth, limit)
-                    if result == 'cutoff':
-                        cutoff_occurred = True
-                    elif result is not None:
-                        return result
-                return cutoff_occurred
+                    if adjacent not in self.explored():
+                        self._explored.add(adjacent)
+                        self._parent[adjacent] = node
+                        result = _recursive_dls(adjacent, limit-1)
+                        if result == 'cutoff':
+                            cutoff_occurred = True
+                        elif result is not False:
+                            return result
+                if cutoff_occurred:
+                    return 'cutoff'
+                else:
+                    return False
 
-        self._explored.add(self.start())
-        return _recursive_dls(self.start(), depth, limit)
+        return _recursive_dls(self.start(), limit)
 
     def iterative_deepening(self):
         """ Repeatedly applies depth-limited search with an increasing limit."""
         for depth in range(sys.maxsize):
             result = self._depth_limited_search(depth)
-            if result != 'cutoff':
+            if result != 'cutoff' and not result:
+                self._path = self._backtrace()
                 return result
 
 def parser():
