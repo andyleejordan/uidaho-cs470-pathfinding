@@ -110,11 +110,12 @@ class Pathfinder(Input):
         x, y = node[0], node[1]
         return self.costs()[self.graph()[y][x]]
 
-    def _sorted_expand(self, node):
+    def _sorted_expand(self, node, reverse=False):
         """ Returns expanded nodes in order from low to high cost."""
         expanded = self._expand(node) # Get adjacent nodes
         costs = {i: self._node_cost(i) for i in expanded} # Add costs
-        ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1]))
+        ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1],
+            reverse=reverse))
         return tuple(ordered.keys()) # Return nodes as tuple
 
     def _safe_filename(self, suffix):
@@ -192,38 +193,72 @@ class Pathfinder(Input):
                     self._fringe.append(adjacent)
         return False
 
-    def _depth_limited_search(self, limit=0):
-        def _recursive_dls(node, limit):
-            print(node)
+    def _depth_limited_search_by_cost(self, limit):
+        """
+        Uses stack instead of queue so is depth-first instead of breadth-first
+        Uses sorted insert (reversed) for action cost accounting
+        Depth limited: checks if depth has reached limit
+        Avoids repeated states
+
+        """
+        self._fringe.append(self.start())
+        depth = 0
+        while self.fringe():
+            if depth == limit:
+                return False
+            depth += 1
+            node = self._fringe.pop()
+            self._explored.add(node)
             if node == self.goal():
-                return node
-            elif limit == 0:
-                return 'cutoff'
-            else:
-                cutoff_occurred = False
-                for adjacent in self._expand(node):
-                    if adjacent not in self.explored():
-                        self._explored.add(adjacent)
-                        self._parent[adjacent] = node
-                        result = _recursive_dls(adjacent, limit-1)
-                        if result == 'cutoff':
-                            cutoff_occurred = True
-                        elif result is not False:
-                            return result
-                if cutoff_occurred:
-                    return 'cutoff'
-                else:
-                    return False
+                self._path = self._backtrace()
+                return True
+            for adjacent in self._sorted_expand(node, reverse=True):
+                if (adjacent not in self.explored()
+                        and adjacent not in self.fringe()):
+                    self._explored.add(adjacent)
+                    self._parent[adjacent] = node
+                    self._fringe.append(adjacent)
+        return False
 
-        return _recursive_dls(self.start(), limit)
+    def _depth_limited_search_by_cost_no_avoid(self, limit):
+        """
+        Uses stack instead of queue so is depth-first instead of breadth-first
+        Uses sorted insert (reversed) for action cost accounting
+        Depth limited: checks if depth has reached limit
+        Does NOT avoid repeated states
 
-    def iterative_deepening(self):
+        """
+        self._fringe.append(self.start())
+        depth = 0
+        while self.fringe():
+            if depth == limit:
+                return False
+            depth += 1
+            node = self._fringe.pop()
+            self._explored.add(node)
+            if node == self.goal():
+                self._path = self._backtrace()
+                return True
+            for adjacent in self._sorted_expand(node, reverse=True):
+                if adjacent not in self.fringe():
+                    self._explored.add(adjacent)
+                    self._parent[adjacent] = node
+                    self._fringe.append(adjacent)
+        return False
+
+    def iterative_deepening_avoid_repeats(self):
         """ Repeatedly applies depth-limited search with an increasing limit."""
         for depth in range(sys.maxsize):
-            result = self._depth_limited_search(depth)
-            if result != 'cutoff' and not result:
-                self._path = self._backtrace()
-                return result
+            result = self._depth_limited_search_by_cost(depth)
+            if result:
+                return True
+
+    def iterative_deepening_without_avoid_repeats(self):
+        """ Repeatedly applies depth-limited search with an increasing limit."""
+        for depth in range(sys.maxsize):
+            result = self._depth_limited_search_by_cost_no_avoid(depth)
+            if result:
+                return True
 
 def parser():
     """ This is the option parser."""
@@ -246,7 +281,8 @@ def main():
     searches = (
         Pathfinder(options, 'breadth_first'),
         Pathfinder(options, 'lowest_cost'),
-        Pathfinder(options, 'iterative_deepening'),
+        Pathfinder(options, 'iterative_deepening_avoid_repeats'),
+        Pathfinder(options, 'iterative_deepening_without_avoid_repeats'),
         Pathfinder(options, 'a_star_1'),
         Pathfinder(options, 'a_star_2'))
 
@@ -259,6 +295,7 @@ def main():
             result = getattr(search, search.name())()
         except AttributeError as e:
             print("Could not find method '{}'".format(search.name()))
+            raise
         else:
             if result:
                 print(success_string.format(
