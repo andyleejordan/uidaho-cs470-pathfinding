@@ -46,25 +46,36 @@ class Input(object):
 
 class PathProblem(object):
     def __init__(self, input_):
+        self._input_ = input_
         self._start = input_.start()
         self._goal = input_.goal()
 
-    def input_(): return self._input_
-    def start(): return self._start
-    def goal(): return self._goal
+    def input_(self): return self._input_
+    def start(self): return self._start
+    def goal(self): return self._goal
 
-    def _is_valid(self, state):
+    def _is_valid(self, state, avoid=True):
         """ Test if node is valid: i.e. real, on map, not explored, not in
         fringe, and not impassable water."""
         x, y = state
-        if (x < self.input_(.)width() and y < self.input_().height() and
-                x >= 0 and y >= 0 and
-                self.input_().costs()[self.input_().graph()[y][x]]):
-            return True
+        if avoid:
+            print(state not in self.input_().explored())
+            if (x < self.input_().width() and y < self.input_().height() and
+                    x >= 0 and y >= 0 and
+                    self.input_().costs()[self.input_().graph()[y][x]] and
+                    state not in self.input_().explored()):
+                return True
+            else:
+                return False
         else:
-            return False
+            if (x < self.input_().width() and y < self.input_().height() and
+                    x >= 0 and y >= 0 and
+                    self.input_().costs()[self.input_().graph()[y][x]]):
+                return True
+            else:
+                return False
 
-    def actions(self, state):
+    def actions(self, state, avoid=True):
         """ Returns valid N, E, S, W coordinates as list."""
         result = []
         x, y = state[0], state[1]
@@ -74,33 +85,32 @@ class PathProblem(object):
                 ('E', (x+1, y)),
                 ('W', (x-1, y)))
         for action in actions:
-            if self._is_valid(action[1]):
+            if self._is_valid(action[1], avoid):
                 result.append(action[0])
         return result
 
     def result(self, state, action):
         if action == 'N':
-            return tuple(map(operator.add, state, (0, -1))
+            return tuple(map(operator.add, state, (0, -1)))
         if action == 'S':
-            return tuple(map(operator.add, state, (0, 1))
-        if action = 'E':
-            return tuple(map(operator.add, state, (1, 0))
-        if action = 'W':
-            return tuple(map(operator.add, state, (-1, 0))
+            return tuple(map(operator.add, state, (0, 1)))
+        if action == 'E':
+            return tuple(map(operator.add, state, (1, 0)))
+        if action == 'W':
+            return tuple(map(operator.add, state, (-1, 0)))
         print("Could not find action: {}".format(action))
 
-    def goal_tests(self, state):
+    def goal_test(self, state):
         return state == self.goal()
 
     def path_cost(self, path_cost, state, action):
         x, y = self.result(state, action)
-        return (path_cost +
-                self.input_().costs()[self.input_().graph()[y][x]])
+        return path_cost + self.input_().costs()[self.input_().graph()[y][x]]
 
 
 class Node(object):
     """ Class object to represent graph node"""
-    def __init__(self, state, parent=None, action=None, path_cost=0)
+    def __init__(self, state, parent=None, action=None, path_cost=0):
         self._depth = 0
         self._state = state
         self._parent = parent
@@ -114,11 +124,11 @@ class Node(object):
     def state(self): return self._state
     def parent(self): return self._parent
     def action(self): return self._action
-    def path_cost(self): return self.path_cost
+    def path_cost(self): return self._path_cost
 
-    def expand(self, problem):
-        return [self.child_node(problem, action)
-                for action in problem.actions(self.state())]
+    def expand(self, problem, avoid=True):
+        return [self.child_node(problem, action) for action in
+                problem.actions(self.state(), avoid)]
 
     def child_node(self, problem, action):
         next_ = problem.result(self.state(), action)
@@ -127,7 +137,7 @@ class Node(object):
                 problem.path_cost(self.path_cost(), self.state(), action))
 
     def solution(self):
-        return [node.action() for node in self.path()[1:]]
+        return [node.state() for node in self.path()[1:]]
 
     def path(self):
         node, path_back = self, []
@@ -148,7 +158,6 @@ class Pathfinder(Input):
 
         self._options = options
         self._name = name
-        self._problem = problem
         self._fringe = []
         self._explored = set()
         self._parent = {}
@@ -156,7 +165,6 @@ class Pathfinder(Input):
 
     def options(self): return self._options
     def name(self): return self._name
-    def problem(self): return self._problem
     def fringe(self): return self._fringe
     def explored(self): return self._explored
     def path(self): return self._path
@@ -311,7 +319,7 @@ class Pathfinder(Input):
                     self._fringe.append(adjacent)
         return False
 
-    def _depth_limited_search(problem, limit=50):
+    def _depth_limited_search(self, problem, limit=50):
         def recursive_dls(node, problem, limit):
             if problem.goal_test(node.state()):
                 return node
@@ -319,7 +327,8 @@ class Pathfinder(Input):
                 return 'cutoff'
             else:
                 cutoff_occurred = False
-                for child in node.expand(problem):
+                for child in node.expand(problem, avoid=False):
+                    self._explored.add(child.state())
                     result = recursive_dls(child, problem, limit)
                     if result == 'cutoff':
                         cutoff_occurred = True
@@ -330,16 +339,32 @@ class Pathfinder(Input):
                 else:
                     return None
 
-    # Body of depth_limited_search:
-    return recursive_dls(Node(problem.start()), problem, limit)
+        # Body of depth_limited_search:
+        return recursive_dls(Node(problem.start()), problem, limit)
 
     def iterative_deepening(self):
         """ Repeatedly applies depth-limited search with an increasing limit."""
-        problem = PathProblem(super())
-        for depth in range(sys.maxsize):
+        problem = PathProblem(self)
+        for depth in range(13):
+            print(depth)
             result = self._depth_limited_search(problem, depth)
-            if result != 'curoff':
+            if result != 'cutoff':
+                if result is not None:
+                    self._path = result.solution()
                 return result
+        return False
+
+    def iterative_lengthening(self):
+        """ Repeatedly applies depth-limited search with an increasing limit."""
+        problem = PathProblem(self)
+        for depth in range(13):
+            print(depth)
+            result = self._depth_limited_search(problem, depth)
+            if result != 'cutoff':
+                if result is not None:
+                    self._path = result.solution()
+                return result
+        return False
 
 def parser():
     """ This is the option parser."""
@@ -362,8 +387,7 @@ def main():
     searches = (
         Pathfinder(options, 'breadth_first'),
         Pathfinder(options, 'lowest_cost'),
-        Pathfinder(options, 'iterative_deepening_avoid_repeats'),
-        Pathfinder(options, 'iterative_deepening_without_avoid_repeats'),
+        Pathfinder(options, 'iterative_deepening'),
         Pathfinder(options, 'a_star_1'),
         Pathfinder(options, 'a_star_2'))
 
