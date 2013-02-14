@@ -44,77 +44,12 @@ class Input(object):
         self._graph = self._read_map(contents[3:])
 
 
-class PathProblem(object):
-    def __init__(self, input_):
-        self._input_ = input_
-        self._start = input_.start()
-        self._goal = input_.goal()
-
-    def input_(self): return self._input_
-    def start(self): return self._start
-    def goal(self): return self._goal
-
-    def _is_valid(self, state, avoid=True):
-        """ Test if node is valid: i.e. real, on map, not explored, not in
-        fringe, and not impassable water."""
-        x, y = state
-        if avoid:
-            print(state not in self.input_().explored())
-            if (x < self.input_().width() and y < self.input_().height() and
-                    x >= 0 and y >= 0 and
-                    self.input_().costs()[self.input_().graph()[y][x]] and
-                    state not in self.input_().explored()):
-                return True
-            else:
-                return False
-        else:
-            if (x < self.input_().width() and y < self.input_().height() and
-                    x >= 0 and y >= 0 and
-                    self.input_().costs()[self.input_().graph()[y][x]]):
-                return True
-            else:
-                return False
-
-    def actions(self, state, avoid=True):
-        """ Returns valid N, E, S, W coordinates as list."""
-        result = []
-        x, y = state[0], state[1]
-        actions = (
-                ('N', (x, y-1)),
-                ('S', (x, y+1)),
-                ('E', (x+1, y)),
-                ('W', (x-1, y)))
-        for action in actions:
-            if self._is_valid(action[1], avoid):
-                result.append(action[0])
-        return result
-
-    def result(self, state, action):
-        if action == 'N':
-            return tuple(map(operator.add, state, (0, -1)))
-        if action == 'S':
-            return tuple(map(operator.add, state, (0, 1)))
-        if action == 'E':
-            return tuple(map(operator.add, state, (1, 0)))
-        if action == 'W':
-            return tuple(map(operator.add, state, (-1, 0)))
-        print("Could not find action: {}".format(action))
-
-    def goal_test(self, state):
-        return state == self.goal()
-
-    def path_cost(self, path_cost, state, action):
-        x, y = self.result(state, action)
-        return path_cost + self.input_().costs()[self.input_().graph()[y][x]]
-
-
 class Node(object):
     """ Class object to represent graph node"""
-    def __init__(self, state, parent=None, action=None, path_cost=0):
+    def __init__(self, state, parent=None, path_cost=0):
         self._depth = 0
         self._state = state
         self._parent = parent
-        self._action = action
         self._path_cost = path_cost
 
         if parent:
@@ -123,18 +58,12 @@ class Node(object):
     def depth(self): return self._depth
     def state(self): return self._state
     def parent(self): return self._parent
-    def action(self): return self._action
     def path_cost(self): return self._path_cost
 
-    def expand(self, problem, avoid=True):
-        return [self.child_node(problem, action) for action in
-                problem.actions(self.state(), avoid)]
-
-    def child_node(self, problem, action):
-        next_ = problem.result(self.state(), action)
-        return Node(
-                next_, self, action,
-                problem.path_cost(self.path_cost(), self.state(), action))
+    def make_child(self, next_state, move_cost=0):
+        """Returns a child node with current_node as parent.
+        Needs the next_state, and the new cost for that state)"""
+        return Node(next_state, self, move_cost)
 
     def solution(self):
         return [node.state() for node in self.path()[1:]]
@@ -159,29 +88,31 @@ class Pathfinder(Input):
         self._options = options
         self._name = name
         self._fringe = []
-        self._explored = set()
-        self._parent = {}
         self._path = []
+        self._explored = set()
 
     def options(self): return self._options
     def name(self): return self._name
     def fringe(self): return self._fringe
-    def explored(self): return self._explored
     def path(self): return self._path
+    def explored(self): return self._explored
     def count(self): return len(self._explored)
+    def add_fringe(self, node): self._fringe.append(node)
+    def add_closed(self, node): self._explored.add(node.state())
+    def goal_test(self, node): return node.state() == self.goal()
 
-    def finish(self):
-        """ Prints maps and resets lists."""
-        self._print_explored()
-        self._print_path()
+    def path_cost(self, current, child):
+        """Returns the new path cost. path_cost(current_node, child_node)"""
+        x, y = child.state()
+        return current.path_cost() + self.node_cost(child)
 
-    def _backtrace(self):
-        """ Calculates the found path from start to goal."""
-        path = [self.goal()]
-        while path[-1] != self.start():
-            path.append(self._parent[path[-1]])
-        path.reverse()
-        return tuple(path)
+    def node_cost(self, node):
+        """ Returns the cost of a node."""
+        x, y = node.state()[0], node.state()[1]
+        return self.costs()[self.graph()[y][x]]
+
+    def sort_fringe(self):
+        self._fringe.sort(lambda a, b: cmp(self.node_cost(a), self.node_cost(b)))
 
     def _is_valid(self, state):
         """ Test if node is valid: i.e. real, on map, not explored, not in
@@ -192,30 +123,70 @@ class Pathfinder(Input):
                 self.costs()[self.graph()[y][x]]):
             return True
         else:
+            #print("State {}, {} was invalid.".format(x, y))
             return False
 
-    def _expand(self, state):
+    def expand(self, node):
         """ Returns valid N, E, S, W coordinates as list."""
         result = []
-        x, y = state[0], state[1]
-        expanded = ((x, y+1), (x+1, y), (x, y-1), (x-1, y))
-        for state in expanded:
-            if self._is_valid(state):
-                result.append(state)
+        x, y = node.state()[0], node.state()[1]
+        actions = (
+                ('N', (x, y-1)),
+                ('S', (x, y+1)),
+                ('E', (x+1, y)),
+                ('W', (x-1, y)))
+        for action in actions:
+            if self._is_valid(action[1]):
+                result.append(action[1])
         return result
 
-    def _node_cost(self, node):
-        """ Returns the cost of a node."""
-        x, y = node[0], node[1]
-        return self.costs()[self.graph()[y][x]]
+    # NOTE: Deprecating this as it is BAD
+    #def _sorted_expand(self, node, reverse=False):
+        #""" Returns expanded nodes in order from low to high cost."""
+        #expanded = self._expand(node) # Get adjacent nodes
+        #costs = {i: self._node_cost(i) for i in expanded} # Add costs
+        #ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1],
+            #reverse=reverse))
+        #return tuple(ordered.keys()) # Return nodes as tuple
 
-    def _sorted_expand(self, node, reverse=False):
-        """ Returns expanded nodes in order from low to high cost."""
-        expanded = self._expand(node) # Get adjacent nodes
-        costs = {i: self._node_cost(i) for i in expanded} # Add costs
-        ordered = OrderedDict(sorted(costs.items(), key=lambda x: x[1],
-            reverse=reverse))
-        return tuple(ordered.keys()) # Return nodes as tuple
+    def breadth_first(self):
+        """Utilizes the breadth first search method to find the path"""
+        start_node = Node(self.start())
+        self.add_fringe(start_node)
+        while self.fringe():
+            parent = self._fringe.pop(0)
+            print(parent.state())
+            if self.goal_test(parent):
+                return parent
+            for state in self.expand(parent):
+                if state not in self.explored():
+                    child = parent.make_child(state)
+                    self.add_fringe(child)
+            self.add_closed(parent)
+        return None
+
+    def uniform_cost_search(self):
+        """Utilizes the breadth first search method coupled with sorted insert"""
+        start_node = Node(self.start())
+        self.add_fringe(start_node)
+        while self.fringe():
+            parent = self._fringe.pop(0)
+            if self.goal_test(parent):
+                return parent
+            for state in self.expand(parent):
+                if state not in self.explored():
+                    child = parent.child_node(state)
+                    self.add_fringe(child)
+                    # This makes it a cost search, sort the fringe list
+                    self.sort_fringe()
+            self.add_closed(parent)
+        return None
+
+
+    def finish(self):
+        """ Prints maps and resets lists."""
+        self._print_explored()
+        self._print_path()
 
     def _safe_filename(self, suffix):
         """ Appends name to suffix with underscore if name is set."""
@@ -223,7 +194,6 @@ class Pathfinder(Input):
             return '_'.join((self.name(), suffix))
         else:
             return suffix
-
     def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
         filename = self._safe_filename(self.options().explored)
@@ -258,113 +228,6 @@ class Pathfinder(Input):
                         f.write(self.graph()[y][x])
                 f.write('\n')
 
-    def breadth_first(self):
-        """Utilizes the breadth first search method to find the path"""
-        self._fringe.append(self.start())  # Start the search
-        while self.fringe():
-            node = self._fringe.pop(0)   # Pop from front: queue
-            self._explored.add(node)
-            if node == self.goal():      # Found goal
-                self._path = self._backtrace()     # Find path
-                return True
-            for adjacent in self._expand(node):
-                if (adjacent not in self.explored()
-                        and adjacent not in self.fringe()):
-                    self._explored.add(adjacent)    # Save explored nodes
-                    self._parent[adjacent] = node
-                    self._fringe.append(adjacent)
-        return False
-
-    def lowest_cost(self):
-        """Utilizes the breadth first search method coupled with sorted insert"""
-        self._fringe.append(self.start())  # Start the search
-        while self.fringe():
-            node = self._fringe.pop(0)   # Pop from front: queue
-            self._explored.add(node)
-            if node == self.goal():      # Found goal
-                self._path = self._backtrace()     # Find path
-                return True
-            for adjacent in self._sorted_expand(node):
-                if (adjacent not in self.explored()
-                        and adjacent not in self.fringe()):
-                    self._explored.add(adjacent)    # Save explored nodes
-                    self._parent[adjacent] = node
-                    self._fringe.append(adjacent)
-        return False
-
-    def _depth_limited_search_by_cost(self, limit):
-        """
-        Uses stack instead of queue so is depth-first instead of breadth-first
-        Uses sorted insert (reversed) for action cost accounting
-        Depth limited: checks if depth has reached limit
-        Avoids repeated states
-
-        """
-        self._fringe.append(self.start())
-        depth = 0
-        while self.fringe():
-            if depth == limit:
-                return False
-            depth += 1
-            node = self._fringe.pop()
-            self._explored.add(node)
-            if node == self.goal():
-                self._path = self._backtrace()
-                return True
-            for adjacent in self._sorted_expand(node, reverse=True):
-                if (adjacent not in self.explored()
-                        and adjacent not in self.fringe()):
-                    self._explored.add(adjacent)
-                    self._parent[adjacent] = node
-                    self._fringe.append(adjacent)
-        return False
-
-    def _depth_limited_search(self, problem, limit=50):
-        def recursive_dls(node, problem, limit):
-            if problem.goal_test(node.state()):
-                return node
-            elif node.depth() == limit:
-                return 'cutoff'
-            else:
-                cutoff_occurred = False
-                for child in node.expand(problem, avoid=False):
-                    self._explored.add(child.state())
-                    result = recursive_dls(child, problem, limit)
-                    if result == 'cutoff':
-                        cutoff_occurred = True
-                    elif result is not None:
-                        return result
-                if cutoff_occurred:
-                    return 'cutoff'
-                else:
-                    return None
-
-        # Body of depth_limited_search:
-        return recursive_dls(Node(problem.start()), problem, limit)
-
-    def iterative_deepening(self):
-        """ Repeatedly applies depth-limited search with an increasing limit."""
-        problem = PathProblem(self)
-        for depth in range(13):
-            print(depth)
-            result = self._depth_limited_search(problem, depth)
-            if result != 'cutoff':
-                if result is not None:
-                    self._path = result.solution()
-                return result
-        return False
-
-    def iterative_lengthening(self):
-        """ Repeatedly applies depth-limited search with an increasing limit."""
-        problem = PathProblem(self)
-        for depth in range(13):
-            print(depth)
-            result = self._depth_limited_search(problem, depth)
-            if result != 'cutoff':
-                if result is not None:
-                    self._path = result.solution()
-                return result
-        return False
 
 def parser():
     """ This is the option parser."""
@@ -386,7 +249,7 @@ def main():
     # Execute search and print results
     searches = (
         Pathfinder(options, 'breadth_first'),
-        Pathfinder(options, 'lowest_cost'),
+        Pathfinder(options, 'uniform_cost_search'),
         Pathfinder(options, 'iterative_deepening'),
         Pathfinder(options, 'a_star_1'),
         Pathfinder(options, 'a_star_2'))
@@ -400,9 +263,9 @@ def main():
             result = getattr(search, search.name())()
         except AttributeError as e:
             print("Could not find method '{}'".format(search.name()))
-            raise
         else:
             if result:
+                search._path = result.solution()
                 print(success_string.format(
                     search.name(), search.start()[0], search.start()[1],
                     search.goal()[0], search.goal()[1], search.count()))
