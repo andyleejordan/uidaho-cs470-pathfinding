@@ -222,10 +222,13 @@ class Search(Input):
         def is_explored(state):
             for i in self.fringe():
                 if state == i[0]:
+                    print("Found in open list.")
                     return i
             for i in self.closed():
                 if state == i[0]:
+                    print("Found in closed list.")
                     return i
+            print("Not yet explored.")
             return False
 
         def get_next():
@@ -242,9 +245,13 @@ class Search(Input):
                 node = is_explored(child)
                 if node and (node[1] > (path_cost + self.state_cost(child))):
                     try:
+                        print("Removing from open list!")
                         self._fringe.remove(node)
                     except:
+                        print("Removing from closed list!")
                         self._closed.remove(node)
+                else:
+                    print("Not removing {}".format(child))
                 self.record_path(parent, child)
                 self.add_fringe((child, path_cost + self.state_cost(child)))
             self.add_closed((parent, path_cost))
