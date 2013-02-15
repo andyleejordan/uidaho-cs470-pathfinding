@@ -219,23 +219,35 @@ class Search(Input):
                 return result
 
     def depth_first_cost_limited(self, limit=5000):
+        def is_explored(self, state):
+            for i in self.fringe():
+                if state == i[0]:
+                    return i
+            for i in self.closed():
+                if state == i[0]:
+                    return i
+            return False
+
         def get_next():
             return self._fringe.pop()
 
-        path_cost = 0
         self.add_fringe((self.start(), 0))
         while self.fringe():
-            parent, cost = get_next()
-            path_cost += cost
+            parent, path_cost = get_next()
             if path_cost >= limit:
                 return None
             if self.goal_test(parent):
                 return parent
             for child in self.expand(parent):
-                if self.is_not_explored(child):
-                    self.record_path(parent, child)
-                    self.add_fringe((child, self.state_cost(child)))
-            self.add_closed(parent)
+                node = is_explored(child)
+                if node and (node[1] > (path_cost + self.state_cost(child))):
+                    try:
+                        self._fringe.remove(node)
+                    except:
+                        self._closed.remove(node)
+                self.record_path(parent, child)
+                self.add_fringe((child, path_cost + self.state_cost(child)))
+            self.add_closed((parent, path_cost))
         return None
 
     def iterative_deepening_cost_limited(self):
