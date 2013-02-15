@@ -87,8 +87,10 @@ class Search(Input):
         x, y = state
         return self.costs()[self.graph()[y][x]]
 
-    def sort_fringe(self):
+    def sort_fringe(self, reverse = False):
         self._fringe.sort(key=lambda state: self.state_cost(state))
+        if reverse:
+            self._fringe.reverse()
 
     def _is_valid(self, state):
         """ Test if node is valid: i.e. real, on map, not explored, not in fringe, and not impassable water."""
@@ -107,10 +109,10 @@ class Search(Input):
         result = []
         x, y = state
         neighbors = (
-                    (x, y-1),
-                    (x, y+1),
                     (x+1, y),
-                    (x-1, y))
+                    (x-1, y),
+                    (x, y-1),
+                    (x, y+1))
         for neighbor in neighbors:
             if self._is_valid(neighbor):
                 result.append(neighbor)
@@ -148,6 +150,62 @@ class Search(Input):
                     self.sort_fringe()
             self.add_closed(parent)
         return None
+
+    def depth_first(self):
+        def get_next():
+            return self._fringe.pop()
+
+        self.add_fringe(self.start())
+        while self.fringe():
+            parent = get_next()
+            if self.goal_test(parent):
+                return parent
+            for child in self.expand(parent):
+                if self.is_not_explored(child):
+                    self.record_path(parent, child)
+                    self.add_fringe(child)
+            self.add_closed(parent)
+        return None
+
+    def depth_first_cost(self):
+        def get_next():
+            return self._fringe.pop()
+
+        self.add_fringe(self.start())
+        while self.fringe():
+            parent = get_next()
+            if self.goal_test(parent):
+                return parent
+            for child in self.expand(parent):
+                if self.is_not_explored(child):
+                    self.record_path(parent, child)
+                    self.add_fringe(child)
+                    self.sort_fringe(True)
+            self.add_closed(parent)
+        return None
+
+    def depth_first_recursive(self):
+        def depth_first_visit(parent):
+            if self.goal_test(parent):
+                return parent
+            self.add_closed(parent)
+            for child in self.expand(parent):
+                if self.is_not_explored(child):
+                    self.record_path(parent, child)
+                    result = depth_first_visit(child)
+                    if result is not None:
+                        return result
+            return None
+
+        for x in range(0, self.width()):
+            for y in range(0, self.height()):
+                state = x, y
+                if self.is_not_explored(state):
+                    result = depth_first_visit(state)
+                    if result is not None:
+                        return result
+        return None
+
 
 
     def finish(self):
@@ -218,6 +276,9 @@ def main():
     searches = (
         Search(options, 'breadth_first'),
         Search(options, 'uniform_cost'),
+        Search(options, 'depth_first'),
+        Search(options, 'depth_first_cost'),
+        #Search(options, 'depth_first_recursive'),
         Search(options, 'iterative_deepening'),
         Search(options, 'a_star_1'),
         Search(options, 'a_star_2'))
