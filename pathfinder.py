@@ -50,7 +50,7 @@ class Search(Input):
         self._options = options
         self._name = name
 
-        self._fringe= []
+        self._fringe = []
         self._closed = set()
         self._path = {}
 
@@ -62,6 +62,11 @@ class Search(Input):
     def fringe(self): return self._fringe
     def closed(self): return self._closed
     def goal_test(self, state): return state == self.goal()
+
+    def clear_lists(self):
+        self._fringe = []
+        self._closed = set()
+        self._path = {}
 
     def add_fringe(self, state):
         self._fringe.append(state)
@@ -87,8 +92,11 @@ class Search(Input):
         x, y = state
         return self.costs()[self.graph()[y][x]]
 
-    def sort_fringe(self, reverse = False):
-        self._fringe.sort(key=lambda state: self.state_cost(state))
+    def sort_fringe(self, reverse=False, tuple_=False):
+        if not tuple_:
+            self._fringe.sort(key=lambda state: self.state_cost(state))
+        else:
+            self._fringe.sort(key=lambda state: self.state_cost(state[0]))
         if reverse:
             self._fringe.reverse()
 
@@ -167,27 +175,6 @@ class Search(Input):
             self.add_closed(parent)
         return None
 
-    def depth_first_depth_limited(self, limit=5000):
-        def get_next():
-            return self._fringe.pop()
-
-        depth = 0
-        self.add_fringe(self.start())
-        while self.fringe():
-            if depth == limit:
-                print("Depth limit reached.")
-                return None
-            parent = get_next()
-            if self.goal_test(parent):
-                return parent
-            for child in self.expand(parent):
-                if self.is_not_explored(child):
-                    self.record_path(parent, child)
-                    self.add_fringe(child)
-            self.add_closed(parent)
-            depth += 1
-        return None
-
     def depth_first_cost(self):
         def get_next():
             return self._fringe.pop()
@@ -201,9 +188,63 @@ class Search(Input):
                 if self.is_not_explored(child):
                     self.record_path(parent, child)
                     self.add_fringe(child)
-                    self.sort_fringe(True)
+                    self.sort_fringe(reverse=True)
             self.add_closed(parent)
         return None
+
+    def depth_first_depth_limited(self, limit=5000):
+        def get_next():
+            return self._fringe.pop()
+
+        self.add_fringe((self.start(), 0))
+        while self.fringe():
+            parent, depth = get_next()
+            if depth >= limit:
+                return None
+            if self.goal_test(parent):
+                return parent
+            for child in self.expand(parent):
+                if self.is_not_explored(child):
+                    self.record_path(parent, child)
+                    self.add_fringe((child, depth+1))
+            self.add_closed(parent)
+        return None
+
+    def iterative_deepening_depth_limited(self):
+        for limit in range(0, sys.maxsize):
+            self.clear_lists()
+            result = self.depth_first_depth_limited(limit)
+            if result is not None:
+                print("IDDL reached depth: {}".format(limit))
+                return result
+
+    def depth_first_cost_limited(self, limit=5000):
+        def get_next():
+            return self._fringe.pop()
+
+        path_cost = 0
+        self.add_fringe((self.start(), 0))
+        while self.fringe():
+            parent, cost = get_next()
+            path_cost += cost
+            if path_cost >= limit:
+                return None
+            if self.goal_test(parent):
+                return parent
+            for child in self.expand(parent):
+                if self.is_not_explored(child):
+                    self.record_path(parent, child)
+                    self.add_fringe((child, self.state_cost(child)))
+            self.add_closed(parent)
+        return None
+
+    def iterative_deepening_cost_limited(self):
+        for limit in range(0, sys.maxsize):
+            self.clear_lists()
+            result = self.depth_first_cost_limited(limit)
+            if result is not None:
+                print("IDCL reached cost: {}".format(limit))
+                return result
 
     def depth_first_recursive(self):
         def depth_first_visit(parent):
@@ -299,9 +340,10 @@ def main():
         Search(options, 'uniform_cost'),
         Search(options, 'depth_first'),
         Search(options, 'depth_first_cost'),
-        Search(options, 'depth_first_depth_limited'),
+        #Search(options, 'depth_first_depth_limited'),
         #Search(options, 'depth_first_recursive'),
-        Search(options, 'iterative_deepening'),
+        Search(options, 'iterative_deepening_depth_limited'),
+        Search(options, 'iterative_deepening_cost_limited'),
         Search(options, 'a_star_1'),
         Search(options, 'a_star_2'))
 
@@ -314,7 +356,6 @@ def main():
             result = getattr(search, search.name())()
         except AttributeError:
             print("Could not find method '{}'".format(search.name()))
-            raise
         else:
             if result is not None:
                 search._path = search.get_path()
