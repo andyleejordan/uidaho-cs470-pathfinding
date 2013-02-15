@@ -354,7 +354,7 @@ def main():
         Search(options, 'depth_first_cost'),
         #Search(options, 'depth_first_depth_limited'),
         #Search(options, 'depth_first_recursive'),
-        Search(options, 'iterative_deepening_depth_limited'),
+        #Search(options, 'iterative_deepening_depth_limited'),
         Search(options, 'iterative_deepening_cost_limited'),
         Search(options, 'a_star_1'),
         Search(options, 'a_star_2'))
