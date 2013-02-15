@@ -167,6 +167,27 @@ class Search(Input):
             self.add_closed(parent)
         return None
 
+    def depth_first_depth_limited(self, limit=5000):
+        def get_next():
+            return self._fringe.pop()
+
+        depth = 0
+        self.add_fringe(self.start())
+        while self.fringe():
+            if depth == limit:
+                print("Depth limit reached.")
+                return None
+            parent = get_next()
+            if self.goal_test(parent):
+                return parent
+            for child in self.expand(parent):
+                if self.is_not_explored(child):
+                    self.record_path(parent, child)
+                    self.add_fringe(child)
+            self.add_closed(parent)
+            depth += 1
+        return None
+
     def depth_first_cost(self):
         def get_next():
             return self._fringe.pop()
@@ -278,6 +299,7 @@ def main():
         Search(options, 'uniform_cost'),
         Search(options, 'depth_first'),
         Search(options, 'depth_first_cost'),
+        Search(options, 'depth_first_depth_limited'),
         #Search(options, 'depth_first_recursive'),
         Search(options, 'iterative_deepening'),
         Search(options, 'a_star_1'),
