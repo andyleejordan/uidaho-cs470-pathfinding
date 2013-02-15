@@ -219,7 +219,7 @@ class Search(Input):
                 return result
 
     def depth_first_cost_limited(self, limit=5000):
-        def is_explored(self, state):
+        def is_explored(state):
             for i in self.fringe():
                 if state == i[0]:
                     return i
