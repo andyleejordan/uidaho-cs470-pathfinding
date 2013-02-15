@@ -50,15 +50,16 @@ class Search(Input):
         self._options = options
         self._name = name
 
-        self._open = []
+        self._fringe= []
         self._closed = set()
         self._path = {}
 
     def options(self): return self._options
     def name(self): return self._name
     def count(self): return len(self.closed())
+    def path(self): return self._path
 
-    def open(self): return self._open
+    def fringe(self): return self._fringe
     def closed(self): return self._closed
     def goal_test(self, state): return state == self.goal()
 
@@ -66,21 +67,28 @@ class Search(Input):
         self._fringe.append(state)
 
     def add_closed(self, state):
-        self._closed.append(state)
+        self._closed.add(state)
 
     def is_not_explored(self, state):
-        return (is state not in self.fringe() and
-                is state not in self.closed())
+        return (state not in self.fringe() and
+                state not in self.closed())
 
-    def record_path(self, parent, state):
-        self._path[parent] = state
+    def record_path(self, parent, child):
+        self._path[child] = parent
+
+    def get_path(self):
+        path = [self.goal()]
+        while path[-1] != self.start():
+            path.append(self._path[path[-1]])
+        path.reverse()
+        return tuple(path)
 
     def state_cost(self, state):
         x, y = state
         return self.costs()[self.graph()[y][x]]
 
     def sort_fringe(self):
-        self._fringe.sort(lambda a, b: cmp(self.state_cost(a), self.state_cost(b)))
+        self._fringe.sort(key=lambda state: self.state_cost(state))
 
     def _is_valid(self, state):
         """ Test if node is valid: i.e. real, on map, not explored, not in fringe, and not impassable water."""
@@ -109,34 +117,34 @@ class Search(Input):
         return result
 
     def breadth_first(self):
-        def get_next(self):
+        def get_next():
             return self._fringe.pop(0)
 
         self.add_fringe(self.start())
         while self.fringe():
-            parent = self.get_next()
+            parent = get_next()
             if self.goal_test(parent):
                 return parent
             for child in self.expand(parent):
                 if self.is_not_explored(child):
                     self.record_path(parent, child)
-                    self.add_fringe(state)
+                    self.add_fringe(child)
             self.add_closed(parent)
         return None
 
-    def uniform_cost_search(self):
-        def get_next(self):
+    def uniform_cost(self):
+        def get_next():
             return self._fringe.pop(0)
 
         self.add_fringe(self.start())
         while self.fringe():
-            parent = self.get_next()
-            if self.goal_test(parent):
-                return parent
+            parent = get_next()
             for child in self.expand(parent):
                 if self.is_not_explored(child):
                     self.record_path(parent, child)
-                    self.add_fringe(state)
+                    if self.goal_test(child):
+                        return child
+                    self.add_fringe(child)
                     self.sort_fringe()
             self.add_closed(parent)
         return None
@@ -221,12 +229,12 @@ def main():
     for search in searches:
         try:
             result = getattr(search, search.name())()
-        except AttributeError as e:
+        except AttributeError:
             print("Could not find method '{}'".format(search.name()))
             raise
         else:
             if result is not None:
-                search._path = search.get_path(result)
+                search._path = search.get_path()
                 print(success_string.format(
                     search.name(), search.start()[0], search.start()[1],
                     search.goal()[0], search.goal()[1], search.count()))
