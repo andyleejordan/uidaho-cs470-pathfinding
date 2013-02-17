@@ -156,7 +156,8 @@ class Search(Input):
             for i in self._fringe:
                 if state == i[0]:
                     if i[1] > path_cost:
-                        i[1] = path_cost
+                        self._fringe.pop(self._fringe.index(i))
+                        self._fringe.append((state, path_cost))
                         return True
                     else:
                         return False
@@ -169,12 +170,14 @@ class Search(Input):
             self.add_closed(parent)
             for child in self.expand(parent):
                 child_path_cost = path_cost + self.state_cost(child)
+                print(child_path_cost)
                 if child not in self.closed():
                     if state_not_in_fringe(child):
                         self.record_path(parent, child)
                         self.add_fringe((child, child_path_cost))
                     elif fringe_higher(child, child_path_cost):
                         self.record_path(parent, child)
+                        self._closed.remove(child)
                     self.sort_fringe(tuple_=True)
         return None
 
@@ -209,6 +212,7 @@ class Search(Input):
             for i in self._fringe:
                 if state == i[0]:
                     if i[1] > depth:
+                        print("path cost higher")
                         i[1] = depth
                         return True
                     else:
@@ -240,20 +244,28 @@ class Search(Input):
                 return result
 
     def depth_first_cost_limited(self, limit=5000):
-        def is_explored(state):
-            for i in self.fringe():
-                if state == i[0]:
-                    print("Found in open list.")
-                    return i
-            for i in self.closed():
-                if state == i[0]:
-                    print("Found in closed list.")
-                    return i
-            print("Not yet explored.")
-            return False
-
         def get_next():
             return self._fringe.pop()
+
+        def state_not_in_fringe(state):
+            for i in self.fringe():
+                if state == i[0]:
+                    return False
+            return True
+
+        def fringe_higher(state, path_cost):
+            for i in self._fringe:
+                if state == i[0]:
+                    if i[1] > path_cost:
+                        print("path cost higher")
+                        i[1] = path_cost
+                        # Move to end of list
+                        print("higher cost!")
+                        self._fringe.append(
+                                self._fringe.pop(self._fringe.index(i)))
+                        return True
+                    else:
+                        return False
 
         self.add_fringe((self.start(), 0))
         while self.fringe():
@@ -262,21 +274,17 @@ class Search(Input):
                 return None
             if self.goal_test(parent):
                 return parent
+            self.add_closed(parent)
             for child in self.expand(parent):
-                node = is_explored(child)
-                if node and (node[1] > (path_cost + self.state_cost(child))):
-                    try:
-                        print("Removing from open list!")
-                        self._fringe.remove(node)
-                    except:
-                        print("Removing from closed list!")
-                        self._closed.remove(node)
-                else:
-                    print("Not removing {}".format(child))
-                self.record_path(parent, child)
-                self.add_fringe((child, path_cost + self.state_cost(child)))
-            self.add_closed((parent, path_cost))
+                child_path_cost = path_cost + self.state_cost(child)
+                if child not in self.closed():
+                    if state_not_in_fringe(child):
+                        self.record_path(parent, child)
+                        self.add_fringe((child, child_path_cost))
+                    elif fringe_higher(child, child_path_cost):
+                        self.record_path(parent, child)
         return None
+
 
     def iterative_deepening_cost_limited(self):
         for limit in range(0, sys.maxsize):
@@ -388,7 +396,8 @@ def main():
         Search(options, 'depth_first'),
         Search(options, 'depth_first_depth_limited'),
         Search(options, 'iterative_deepening_depth_limited'),
-        #Search(options, 'iterative_deepening_cost_limited'),
+        Search(options, 'depth_first_cost_limited'),
+        Search(options, 'iterative_deepening_cost_limited'),
         Search(options, 'depth_first_recursive'),
         #Search(options, 'a_star_1'),
         #Search(options, 'a_star_2')
