@@ -287,22 +287,29 @@ class Search(Input):
                 return result
 
     def depth_first_recursive(self):
+        gray = set()
+
         def depth_first_visit(parent):
             if self.goal_test(parent):
                 return parent
-            self.add_closed(parent)
+            gray.add(parent)
+            found = False
             for child in self.expand(parent):
-                if self.is_not_explored(child):
+                if child not in gray and child not in self.closed():
                     self.record_path(parent, child)
                     result = depth_first_visit(child)
                     if result is not None:
-                        return result
+                        found = True
+            gray.remove(parent)
+            self.add_closed(parent)
+            if found:
+                return result
             return None
 
         for x in range(0, self.width()):
             for y in range(0, self.height()):
                 state = x, y
-                if self.is_not_explored(state):
+                if state not in gray and state not in self.closed():
                     result = depth_first_visit(state)
                     if result is not None:
                         return result
@@ -382,9 +389,10 @@ def main():
         Search(options, 'depth_first_depth_limited'),
         Search(options, 'iterative_deepening_depth_limited'),
         #Search(options, 'iterative_deepening_cost_limited'),
-        #Search(options, 'depth_first_recursive'),
-        Search(options, 'a_star_1'),
-        Search(options, 'a_star_2'))
+        Search(options, 'depth_first_recursive'),
+        #Search(options, 'a_star_1'),
+        #Search(options, 'a_star_2')
+        )
 
     success_string = "{} method found path from ({}, {}) to ({}, {}),"
     success_string += " exploring {} nodes."
