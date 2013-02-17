@@ -187,33 +187,32 @@ class Search(Input):
             parent = get_next()
             if self.goal_test(parent):
                 return parent
+            self.add_closed(parent)
             for child in self.expand(parent):
                 if self.is_not_explored(child):
                     self.record_path(parent, child)
                     self.add_fringe(child)
-            self.add_closed(parent)
         return None
 
-    def depth_first_cost(self):
-        def get_next():
-            return self._fringe.pop()
-
-        self.add_fringe(self.start())
-        while self.fringe():
-            parent = get_next()
-            if self.goal_test(parent):
-                return parent
-            for child in self.expand(parent):
-                if self.is_not_explored(child):
-                    self.record_path(parent, child)
-                    self.add_fringe(child)
-                    self.sort_fringe(reverse=True)
-            self.add_closed(parent)
-        return None
 
     def depth_first_depth_limited(self, limit=5000):
         def get_next():
             return self._fringe.pop()
+
+        def state_not_in_fringe(state):
+            for i in self.fringe():
+                if state == i[0]:
+                    return False
+            return True
+
+        def fringe_higher(state, depth):
+            for i in self._fringe:
+                if state == i[0]:
+                    if i[1] > depth:
+                        i[1] = depth
+                        return True
+                    else:
+                        return False
 
         self.add_fringe((self.start(), 0))
         while self.fringe():
@@ -222,11 +221,14 @@ class Search(Input):
                 return None
             if self.goal_test(parent):
                 return parent
-            for child in self.expand(parent):
-                if self.is_not_explored(child):
-                    self.record_path(parent, child)
-                    self.add_fringe((child, depth+1))
             self.add_closed(parent)
+            for child in self.expand(parent):
+                if child not in self.closed():
+                    if state_not_in_fringe(child):
+                        self.record_path(parent, child)
+                        self.add_fringe((child, depth+1))
+                    elif fringe_higher(child, depth+1):
+                        self.record_path(parent, child)
         return None
 
     def iterative_deepening_depth_limited(self):
@@ -376,12 +378,11 @@ def main():
     searches = (
         Search(options, 'breadth_first'),
         Search(options, 'uniform_cost'),
-        #Search(options, 'depth_first'),
-        #Search(options, 'depth_first_cost'),
-        #Search(options, 'depth_first_depth_limited'),
-        #Search(options, 'depth_first_recursive'),
-        #Search(options, 'iterative_deepening_depth_limited'),
+        Search(options, 'depth_first'),
+        Search(options, 'depth_first_depth_limited'),
+        Search(options, 'iterative_deepening_depth_limited'),
         #Search(options, 'iterative_deepening_cost_limited'),
+        #Search(options, 'depth_first_recursive'),
         Search(options, 'a_star_1'),
         Search(options, 'a_star_2'))
 
