@@ -96,7 +96,7 @@ class Search(Input):
         if not tuple_:
             self._fringe.sort(key=lambda state: self.state_cost(state))
         else:
-            self._fringe.sort(key=lambda state: self.state_cost(state[0]))
+            self._fringe.sort(key=lambda node: node[1])
         if reverse:
             self._fringe.reverse()
 
@@ -146,17 +146,36 @@ class Search(Input):
         def get_next():
             return self._fringe.pop(0)
 
-        self.add_fringe(self.start())
+        def state_not_in_fringe(state):
+            for i in self.fringe():
+                if state == i[0]:
+                    return False
+            return True
+
+        def fringe_higher(state, path_cost):
+            for i in self._fringe:
+                if state == i[0]:
+                    if i[1] > path_cost:
+                        i[1] = path_cost
+                        return True
+                    else:
+                        return False
+
+        self.add_fringe((self.start(), 0))
         while self.fringe():
-            parent = get_next()
-            for child in self.expand(parent):
-                if self.is_not_explored(child):
-                    self.record_path(parent, child)
-                    if self.goal_test(child):
-                        return child
-                    self.add_fringe(child)
-                    self.sort_fringe()
+            parent, path_cost = get_next()
+            if self.goal_test(parent):
+                return parent
             self.add_closed(parent)
+            for child in self.expand(parent):
+                child_path_cost = path_cost + self.state_cost(child)
+                if child not in self.closed():
+                    if state_not_in_fringe(child):
+                        self.record_path(parent, child)
+                        self.add_fringe((child, child_path_cost))
+                    elif fringe_higher(child, child_path_cost):
+                        self.record_path(parent, child)
+                    self.sort_fringe(tuple_=True)
         return None
 
     def depth_first(self):
@@ -357,12 +376,12 @@ def main():
     searches = (
         Search(options, 'breadth_first'),
         Search(options, 'uniform_cost'),
-        Search(options, 'depth_first'),
-        Search(options, 'depth_first_cost'),
+        #Search(options, 'depth_first'),
+        #Search(options, 'depth_first_cost'),
         #Search(options, 'depth_first_depth_limited'),
         #Search(options, 'depth_first_recursive'),
         #Search(options, 'iterative_deepening_depth_limited'),
-        Search(options, 'iterative_deepening_cost_limited'),
+        #Search(options, 'iterative_deepening_cost_limited'),
         Search(options, 'a_star_1'),
         Search(options, 'a_star_2'))
 
