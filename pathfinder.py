@@ -68,11 +68,29 @@ class Search(Input):
         self._closed = set()
         self._path = {}
 
-    def add_fringe(self, state):
-        self._fringe.append(state)
+    def add_fringe(self, state, cost=None):
+        if cost is not None:
+            self._fringe.append((state, cost))
+        else:
+            self._fringe.append(state)
 
     def add_closed(self, state):
         self._closed.add(state)
+
+    def remove_closed(self, state):
+        try:
+            self._closed.remove(state)
+        except KeyError:
+            pass
+
+    def remove_fringe(self, i):
+        self._fringe.pop(self._fringe.index(i))
+
+    def get_next_front(self):
+        return self._fringe.pop(0)
+
+    def get_next_end(self):
+        return self._fringe.pop()
 
     def is_not_explored(self, state):
         return (state not in self.fringe() and
@@ -99,6 +117,25 @@ class Search(Input):
             self._fringe.sort(key=lambda node: node[1])
         if reverse:
             self._fringe.reverse()
+
+    def state_not_in_fringe(self, state):
+        for i in self.fringe():
+            if state == i[0]:
+                return False
+        return True
+
+    def fringe_higher(self, state, cost, append=True):
+        for i in self._fringe:
+            if state == i[0]:
+                if i[1] > cost:
+                    self.remove_fringe(i)
+                    if append:
+                        self.add_fringe(state, cost)
+                    return True
+                if i[1] == cost:
+                    return True
+                else:
+                    return False
 
     def _is_valid(self, state):
         """ Test if node is valid: i.e. real, on map, not explored, not in fringe, and not impassable water."""
@@ -127,12 +164,9 @@ class Search(Input):
         return result
 
     def breadth_first(self):
-        def get_next():
-            return self._fringe.pop(0)
-
         self.add_fringe(self.start())
         while self.fringe():
-            parent = get_next()
+            parent = self.get_next_front()
             if self.goal_test(parent):
                 return parent
             for child in self.expand(parent):
@@ -143,51 +177,28 @@ class Search(Input):
         return None
 
     def uniform_cost(self):
-        def get_next():
-            return self._fringe.pop(0)
-
-        def state_not_in_fringe(state):
-            for i in self.fringe():
-                if state == i[0]:
-                    return False
-            return True
-
-        def fringe_higher(state, path_cost):
-            for i in self._fringe:
-                if state == i[0]:
-                    if i[1] > path_cost:
-                        self._fringe.pop(self._fringe.index(i))
-                        self._fringe.append((state, path_cost))
-                        return True
-                    else:
-                        return False
-
-        self.add_fringe((self.start(), 0))
+        self.add_fringe(self.start(), 0)
         while self.fringe():
-            parent, path_cost = get_next()
+            parent, path_cost = self.get_next_front()
             if self.goal_test(parent):
                 return parent
             self.add_closed(parent)
             for child in self.expand(parent):
                 child_path_cost = path_cost + self.state_cost(child)
-                print(child_path_cost)
                 if child not in self.closed():
-                    if state_not_in_fringe(child):
+                    if self.state_not_in_fringe(child):
                         self.record_path(parent, child)
-                        self.add_fringe((child, child_path_cost))
-                    elif fringe_higher(child, child_path_cost):
+                        self.add_fringe(child, child_path_cost)
+                    elif self.fringe_higher(child, child_path_cost):
                         self.record_path(parent, child)
-                        self._closed.remove(child)
-                    self.sort_fringe(tuple_=True)
+                        self.remove_closed(child)
+            self.sort_fringe(tuple_=True)
         return None
 
     def depth_first(self):
-        def get_next():
-            return self._fringe.pop()
-
         self.add_fringe(self.start())
         while self.fringe():
-            parent = get_next()
+            parent = self.get_next_end()
             if self.goal_test(parent):
                 return parent
             self.add_closed(parent)
@@ -198,93 +209,86 @@ class Search(Input):
         return None
 
 
-    def depth_first_depth_limited(self, limit=5000):
-        def get_next():
-            return self._fringe.pop()
-
-        def state_not_in_fringe(state):
-            for i in self.fringe():
-                if state == i[0]:
-                    return False
-            return True
-
-        def fringe_higher(state, depth):
-            for i in self._fringe:
-                if state == i[0]:
-                    if i[1] > depth:
-                        print("path cost higher")
-                        i[1] = depth
-                        return True
-                    else:
-                        return False
-
-        self.add_fringe((self.start(), 0))
+    def depth_limited(self, limit=5000):
+        self.add_fringe(self.start(), 0)
         while self.fringe():
-            parent, depth = get_next()
+            parent, depth = self.get_next_end()
             if depth >= limit:
-                return None
+                continue # HOLY FUCKING SHIT THIS IS IMPORTANT
             if self.goal_test(parent):
                 return parent
             self.add_closed(parent)
             for child in self.expand(parent):
                 if child not in self.closed():
-                    if state_not_in_fringe(child):
+                    if self.state_not_in_fringe(child):
                         self.record_path(parent, child)
-                        self.add_fringe((child, depth+1))
-                    elif fringe_higher(child, depth+1):
+                        self.add_fringe(child, depth+1)
+                if not self.state_not_in_fringe(child):
+                    if self.fringe_higher(child, depth+1):
                         self.record_path(parent, child)
+                        self.remove_closed(child)
         return None
 
     def iterative_deepening_depth_limited(self):
         for limit in range(0, sys.maxsize):
             self.clear_lists()
-            result = self.depth_first_depth_limited(limit)
+            result = self.depth_limited(limit)
             if result is not None:
                 print("IDDL reached depth: {}".format(limit))
                 return result
 
+    def depth_limited_recursive(self, limit=5000):
+        def depth_first_visit(parent, depth, limit):
+            if depth >= limit:
+                return 'cutoff'
+            self.add_fringe(parent, depth)
+            if self.goal_test(parent):
+                return parent
+            cutoff = False
+            for child in self.expand(parent):
+                if (self.state_not_in_fringe(child) or
+                        self.fringe_higher(child, depth+1, append=False)):
+                    result = depth_first_visit(child, depth+1, limit)
+                    self.record_path(parent, child)
+                    if result == 'cutoff':
+                        cutoff = True
+                    if result is not None:
+                        return result
+            self.remove_fringe((parent, depth))
+            if cutoff:
+                return 'cutoff'
+            return None
+
+        return depth_first_visit(self.start(), 0, limit)
+
+    def iterative_deepening_depth_limited_recursive(self):
+        for limit in range(0, sys.maxsize):
+            self.clear_lists()
+            result = self.depth_limited_recursive(limit)
+            if result != 'cutoff':
+                print("IDDL reached depth: {}".format(limit))
+                return result
+
     def depth_first_cost_limited(self, limit=5000):
-        def get_next():
-            return self._fringe.pop()
-
-        def state_not_in_fringe(state):
-            for i in self.fringe():
-                if state == i[0]:
-                    return False
-            return True
-
-        def fringe_higher(state, path_cost):
-            for i in self._fringe:
-                if state == i[0]:
-                    if i[1] > path_cost:
-                        print("path cost higher")
-                        i[1] = path_cost
-                        # Move to end of list
-                        print("higher cost!")
-                        self._fringe.append(
-                                self._fringe.pop(self._fringe.index(i)))
-                        return True
-                    else:
-                        return False
-
-        self.add_fringe((self.start(), 0))
+        self.add_fringe(self.start(), 0)
         while self.fringe():
-            parent, path_cost = get_next()
+            parent, path_cost = self.get_next_end()
             if path_cost >= limit:
-                return None
+                continue # HOLY FUCKING SHIT THIS IS IMPORTANT
             if self.goal_test(parent):
                 return parent
             self.add_closed(parent)
             for child in self.expand(parent):
                 child_path_cost = path_cost + self.state_cost(child)
                 if child not in self.closed():
-                    if state_not_in_fringe(child):
+                    if self.state_not_in_fringe(child):
                         self.record_path(parent, child)
-                        self.add_fringe((child, child_path_cost))
-                    elif fringe_higher(child, child_path_cost):
+                        self.add_fringe(child, child_path_cost)
+                if not self.state_not_in_fringe(child):
+                    if self.fringe_higher(child, child_path_cost):
                         self.record_path(parent, child)
+                        self.remove_closed(child)
         return None
-
 
     def iterative_deepening_cost_limited(self):
         for limit in range(0, sys.maxsize):
