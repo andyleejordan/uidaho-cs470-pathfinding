@@ -124,7 +124,7 @@ class Search(Input):
                 return False
         return True
 
-    def fringe_higher(self, state, cost, append=True):
+    def fringe_higher(self, state, cost, equal=True, append=True):
         for i in self._fringe:
             if state == i[0]:
                 if i[1] > cost:
@@ -132,7 +132,7 @@ class Search(Input):
                     if append:
                         self.add_fringe(state, cost)
                     return True
-                if i[1] == cost:
+                if i[1] == cost and equal:
                     return True
                 else:
                     return False
@@ -149,7 +149,7 @@ class Search(Input):
         else:
             return False
 
-    def expand(self, state):
+    def expand(self, state, sort=False):
         """ Returns valid N, E, S, W coordinates as list."""
         result = []
         x, y = state
@@ -161,6 +161,9 @@ class Search(Input):
         for neighbor in neighbors:
             if self._is_valid(neighbor):
                 result.append(neighbor)
+        if sort:
+            result.sort(key=lambda state: self.state_cost(state))
+            result.reverse()
         return result
 
     def breadth_first(self):
@@ -273,7 +276,7 @@ class Search(Input):
         self.add_fringe(self.start(), 0)
         while self.fringe():
             parent, path_cost = self.get_next_end()
-            if path_cost >= limit:
+            if path_cost > limit:
                 continue # HOLY FUCKING SHIT THIS IS IMPORTANT
             if self.goal_test(parent):
                 return parent
@@ -326,7 +329,6 @@ class Search(Input):
                     if result is not None:
                         return result
         return None
-
 
 
     def finish(self):
@@ -398,7 +400,7 @@ def main():
         Search(options, 'breadth_first'),
         Search(options, 'uniform_cost'),
         Search(options, 'depth_first'),
-        Search(options, 'depth_first_depth_limited'),
+        Search(options, 'depth_limited'),
         Search(options, 'iterative_deepening_depth_limited'),
         Search(options, 'depth_first_cost_limited'),
         Search(options, 'iterative_deepening_cost_limited'),
