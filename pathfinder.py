@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import math
+import numpy
 import sys
 
 
@@ -330,6 +332,62 @@ class Search(Input):
                         return result
         return None
 
+    def square_distance(self, point, origin):
+        x1, y1 = point
+        x2, y2 = origin
+        return (point[0]-origin[0])**2+(point[1]-origin[1])**2
+
+    def euclidean_distance(self, state):
+        #a = numpy.array(self.goal())
+        #b = numpy.array(state)
+        #return numpy.linalg.norm(a-b)
+        return math.sqrt(self.square_distance(self.goal(), state))
+
+    def a_star1(self):
+        self.add_fringe(self.start(), 0)
+        while self.fringe():
+            parent, cost = self.get_next_front()
+            if self.goal_test(parent):
+                return parent
+            self.add_closed(parent)
+            for child in self.expand(parent):
+                child_cost = (cost + self.state_cost(child) +
+                        self.euclidean_distance(child))
+                if child not in self.closed():
+                    if self.state_not_in_fringe(child):
+                        self.record_path(parent, child)
+                        self.add_fringe(child, child_cost)
+                    elif self.fringe_higher(child, child_cost):
+                        self.record_path(parent, child)
+                        self.remove_closed(child)
+            self.sort_fringe(tuple_=True)
+        return None
+
+    def taxicab_distance(self, state):
+        x1, y1 = self.goal()
+        x2, y2 = state
+        return abs(x1-x2)+abs(y1-y2)
+
+    def a_star2(self):
+        self.add_fringe(self.start(), 0)
+        while self.fringe():
+            parent, cost = self.get_next_front()
+            if self.goal_test(parent):
+                return parent
+            self.add_closed(parent)
+            for child in self.expand(parent):
+                child_cost = (cost + self.state_cost(child) +
+                        self.taxicab_distance(child))
+                if child not in self.closed():
+                    if self.state_not_in_fringe(child):
+                        self.record_path(parent, child)
+                        self.add_fringe(child, child_cost)
+                    elif self.fringe_higher(child, child_cost):
+                        self.record_path(parent, child)
+                        self.remove_closed(child)
+            self.sort_fringe(tuple_=True)
+        return None
+
 
     def finish(self):
         """ Prints maps and resets lists."""
@@ -405,8 +463,8 @@ def main():
         Search(options, 'depth_first_cost_limited'),
         Search(options, 'iterative_deepening_cost_limited'),
         Search(options, 'depth_first_recursive'),
-        #Search(options, 'a_star_1'),
-        #Search(options, 'a_star_2')
+        Search(options, 'a_star1'),
+        Search(options, 'a_star2')
         )
 
     success_string = "{} method found path from ({}, {}) to ({}, {}),"
