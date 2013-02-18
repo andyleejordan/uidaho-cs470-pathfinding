@@ -175,6 +175,45 @@ class Search(Input):
             result.reverse()
         return result
 
+    def no_heuristic(self, drop=None):
+        return 0
+
+    def square_distance(self, point, origin):
+        x1, y1 = point
+        x2, y2 = origin
+        return (point[0]-origin[0])**2+(point[1]-origin[1])**2
+
+    def euclidean_distance(self, state):
+        #a = numpy.array(self.goal())
+        #b = numpy.array(state)
+        #return numpy.linalg.norm(a-b)
+        return math.sqrt(self.square_distance(self.goal(), state))
+
+    def taxicab_distance(self, state):
+        x1, y1 = self.goal()
+        x2, y2 = state
+        return abs(x1-x2)+abs(y1-y2)
+
+    def a_star(self):
+        self.add_fringe(self.start(), 0)
+        while self.fringe():
+            parent, cost = self.get_next_front()
+            if self.goal_test(parent):
+                return parent
+            self.add_closed(parent)
+            for child in self.expand(parent):
+                child_cost = (cost + self.state_cost(child) +
+                        self.function()(child))
+                if child not in self.closed():
+                    if self.state_not_in_fringe(child):
+                        self.record_path(parent, child)
+                        self.add_fringe(child, child_cost)
+                    elif self.fringe_higher(child, child_cost):
+                        self.record_path(parent, child)
+                        self.remove_closed(child)
+            self.sort_fringe(tuple_=True)
+        return None
+
     def breadth_first(self):
         self.add_fringe(self.start())
         while self.fringe():
@@ -189,23 +228,7 @@ class Search(Input):
         return None
 
     def uniform_cost(self):
-        self.add_fringe(self.start(), 0)
-        while self.fringe():
-            parent, path_cost = self.get_next_front()
-            if self.goal_test(parent):
-                return parent
-            self.add_closed(parent)
-            for child in self.expand(parent):
-                child_path_cost = path_cost + self.state_cost(child)
-                if child not in self.closed():
-                    if self.state_not_in_fringe(child):
-                        self.record_path(parent, child)
-                        self.add_fringe(child, child_path_cost)
-                    elif self.fringe_higher(child, child_path_cost):
-                        self.record_path(parent, child)
-                        self.remove_closed(child)
-            self.sort_fringe(tuple_=True)
-        return None
+        return self.a_star()
 
     def depth_first(self):
         self.add_fringe(self.start())
@@ -339,42 +362,6 @@ class Search(Input):
                         return result
         return None
 
-    def square_distance(self, point, origin):
-        x1, y1 = point
-        x2, y2 = origin
-        return (point[0]-origin[0])**2+(point[1]-origin[1])**2
-
-    def euclidean_distance(self, state):
-        #a = numpy.array(self.goal())
-        #b = numpy.array(state)
-        #return numpy.linalg.norm(a-b)
-        return math.sqrt(self.square_distance(self.goal(), state))
-
-    def taxicab_distance(self, state):
-        x1, y1 = self.goal()
-        x2, y2 = state
-        return abs(x1-x2)+abs(y1-y2)
-
-    def a_star(self):
-        self.add_fringe(self.start(), 0)
-        while self.fringe():
-            parent, cost = self.get_next_front()
-            if self.goal_test(parent):
-                return parent
-            self.add_closed(parent)
-            for child in self.expand(parent):
-                child_cost = (cost + self.state_cost(child) +
-                        self.function()(child))
-                if child not in self.closed():
-                    if self.state_not_in_fringe(child):
-                        self.record_path(parent, child)
-                        self.add_fringe(child, child_cost)
-                    elif self.fringe_higher(child, child_cost):
-                        self.record_path(parent, child)
-                        self.remove_closed(child)
-            self.sort_fringe(tuple_=True)
-        return None
-
     def finish(self):
         """ Prints maps and resets lists."""
         self._print_explored()
@@ -447,7 +434,7 @@ def main():
     # Execute search and print results
     searches = (
         Search(options, 'breadth_first'),
-        Search(options, 'uniform_cost'),
+        Search(options, 'uniform_cost', 'no_heuristic'),
         Search(options, 'depth_first'),
         Search(options, 'depth_limited'),
         Search(options, 'iterative_deepening_depth_limited'),
