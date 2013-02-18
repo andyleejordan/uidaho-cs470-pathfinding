@@ -165,10 +165,10 @@ class Search(Input):
         result = []
         x, y = state
         neighbors = (
-                    (x+1, y),
-                    (x-1, y),
                     (x, y-1),
-                    (x, y+1))
+                    (x, y+1),
+                    (x+1, y),
+                    (x-1, y))
         for neighbor in neighbors:
             if self._is_valid(neighbor):
                 result.append(neighbor)
