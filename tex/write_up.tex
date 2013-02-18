@@ -26,7 +26,7 @@
 \begin{document}
 \maketitle % Print the title
 \begin{abstract}
-For this project I implemented a pathfinding program in Python to find the path from specified start to goal coordinates on a rectangular ASCII map. The agent is able to move up, down, left, and right, but not diagonally. I explored the efficiency of multiple common search algorithms used to solve this problem, including breadth-first, A* using Euclidean and Taxicab distance heuristics, uniform cost, depth-first using a stack, recursive depth-first, and iterative deepening.
+For this project I implemented a pathfinding program in Python to find the path from specified start to goal coordinates on a rectangular ASCII map. The agent is able to move up, down, left, and right, but not diagonally. I explored the efficiency of multiple common search algorithms used to solve this problem, including breadth-first, A* using Euclidean and Taxicab distance heuristics, uniform-cost, depth-first using a stack, recursive depth-first, and iterative deepening.
 \end{abstract}
 \pagebreak
 \section{The Maps}
@@ -301,4 +301,92 @@ Mhh###f$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+\section{Uniform-cost Algorithm}
+Uniform-cost search is actually a special implementation of the A* algorithm, and it is also both complete and optimal. In fact, in the code, uniform-cost search simply calls the A* subroutine with a ``monotonic heuristic.'' In the cost calculation formula $f(n) = g(n) + h(n)$, $h(n)$ is zero for uniform-cost search, hence its name. It does, however, still take $g(n)$ (specific movement costs) into account. Interestingly, the breadth-first algorithm is itself a special case of uniform-cost, where instead of taking into account a varied movement cost, all costs are the same, and thus it searches instead for the shortest path.
+
+\begin{tabular}{p{2in} p{2in} p{2in}}
+Map & Path & Explored \\
+
+\begin{verbatim}
+MMMhhffffffffff
+MMMMMhhffffffff
+hMMMhhhffFFFfff
+fhMhffFFFFFFFff
+fhhhffFFFFFFFFF
+ffffFFFFFFFFfff
+rrrrfFFFFFFffff
+fffrrffFFFfffff
+RRffrrrfFFFFfff
+fRffffrFFFFFFff
+fRfffWWWWWFFFFF
+fRffWWWWWWWWFFF
+fRRfffWWWWWWWrr
+ffRRRRffffWWfff
+fffffRRRfffffff
+fffffffRfffffff
+hffffffRRRRRRRR
+Mhhffffffffffff
+Mhhffffffffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+MMMhhff@fffffff
+MMMMMhh*fffffff
+hMMMhhh*fFFFfff
+fhMh****FFFFFff
+fhhh*fFFFFFFFFF
+ff***FFFFFFFfff
+rr*rfFFFFFFffff
+ff*rrffFFFfffff
+R**frrrfFFFFfff
+f*ffffrFFFFFFff
+f*fffWWWWWFFFFF
+f*ffWWWWWWWWFFF
+f**fffWWWWWWWrr
+ff****ffffWWfff
+fffff***fffffff
+fffffff*fffffff
+hffffff*RRRRRRR
+Mhhffff*fffffff
+Mhhffff$fffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+#######@#######
+#######*#######
+#######*#######
+####****#######
+####*##########
+##***##########
+##*############
+##*############
+#**############
+#*#############
+#*###WWWWW#####
+#*##WWWWWWWW###
+#**###WWWWWWW##
+##****####WW###
+#####***#######
+#######*##ff###
+#######*###R###
+M######*#ffffff
+Mhh###f$fffffff
+MMhhhffffffffff
+\end{verbatim}
+\end{tabular}
+
+%\begin{tabular}{p{2in} p{2in} p{2in}}
+%Map & Path & Explored \\
+
+%\begin{verbatim}
+%\end{verbatim}
+%&
+%\begin{verbatim}
+%\end{verbatim}
+%&
+%\begin{verbatim}
+%\end{verbatim}
+%\end{tabular}
 \end{document}
