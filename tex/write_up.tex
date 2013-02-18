@@ -26,37 +26,132 @@
 \begin{document}
 \maketitle % Print the title
 \begin{abstract}
-For this project I implemented a pathfinding program in Python to find the path
-from specified start to goal coordinates on a rectangular ASCII map. The agent
-is able to move up, down, left, and right, but not diagonally. I explored the
-efficiency of multiple common search algorithms used to solve this problem,
-including breadth-first, A* using Euclidean and Taxicab distance heuristics,
-uniform cost, depth-first using a stack, recursive depth-first, and iterative
-deepening.
+For this project I implemented a pathfinding program in Python to find the path from specified start to goal coordinates on a rectangular ASCII map. The agent is able to move up, down, left, and right, but not diagonally. I explored the efficiency of multiple common search algorithms used to solve this problem, including breadth-first, A* using Euclidean and Taxicab distance heuristics, uniform cost, depth-first using a stack, recursive depth-first, and iterative deepening.
 \end{abstract}
 \pagebreak
+\section{The Maps}
+The maps used in this project are rectangular grids of ASCII characters. We have:
+\begin{center}
+\begin{tabular}{l | l | l}
+Character & Meaning & Movement cost \\ \hline
+R & road & 1 \\
+f & field & 2 \\
+F & forest & 4 \\
+h & hills & 5 \\
+r & river & 7 \\
+M & mountains & 10 \\
+W & water & invalid moves \\
+\end{tabular}
+\end{center}
+
+In the path and explored maps, `@' is the starting point, `*' is the path, `\$' is the goal, and `\#' is an explored state. \\ 
+
+The sample map is of size 15 by 20, with a start coordinate of (7, 0) and goal coordinate of (7, 18). \\
 
 \section{The Breadth-first Algorithm}
-Breadth-first is an algorithm for small problems only, as it has a time and
-space complexity both of $O(b^{d})$. It is both complete and optimal, in that it
-will find the solution (if one exists) and it will find the solution with the
-fewest actions (but does not take cost into account, unless a sorted queue is
-used).\\
+Breadth-first is an algorithm for small problems only, as it has a time and space complexity both of $O(b^{d})$. Essentially, it examines every possible until it reaches the goal. Beacuse of this, it is both complete and optimal, in that it will find the solution (if one exists) and it will find the solution with the lowest cost, provided each move cost the same. \\
 
 The algorithm is simple: 
+
 \begin{verbatim}
-1.  Create a fringe list
-2.  Queue root node (start state) onto fringe list
-3.  while fringe list is not empty:
-4.      Remove first state from list (do not pop last like a stack)
-5.      if removed state is goal
-6.          then return path
-7.      else expand state and add new nodes to list
+create a fringe list
+queue root node (start state) onto fringe list
+while fringe list is not empty:
+    remove front state from list
+    if removed state is goal:
+        then return path
+    for neighbor of removed state:
+        add neighbor to open list
 \end{verbatim}
 
-The sample map is of size 15 by 20, with a start coordinate of (7, 0) and
-goal coordinate of (7, 18). In the path and explored maps, `@' is the starting
-point, `*' is the path, `\$' is the goal, and `\#' is an explored state. \\
+\begin{tabular}{p{2in} p{2in} p{2in}}
+Map & Path & Explored \\
+\begin{verbatim}
+MMMhhffffffffff
+MMMMMhhffffffff
+hMMMhhhffFFFfff
+fhMhffFFFFFFFff
+fhhhffFFFFFFFFF
+ffffFFFFFFFFfff
+rrrrfFFFFFFffff
+fffrrffFFFfffff
+RRffrrrfFFFFfff
+fRffffrFFFFFFff
+fRfffWWWWWFFFFF
+fRffWWWWWWWWFFF
+fRRfffWWWWWWWrr
+ffRRRRffffWWfff
+fffffRRRfffffff
+fffffffRfffffff
+hffffffRRRRRRRR
+Mhhffffffffffff
+Mhhffffffffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+MMMhhff@fffffff
+MMMMMhh*fffffff
+hMMMhhh*fFFFfff
+fhMhffF*FFFFFff
+fhhhffF*FFFFFFF
+ffffFFF*FFFFfff
+rrrrfFF*FFFffff
+fffrrff*FFfffff
+RRffrrr*FFFFfff
+fRff****FFFFFff
+fRf**WWWWWFFFFF
+fRf*WWWWWWWWFFF
+fRR*ffWWWWWWWrr
+ffR*RRffffWWfff
+fff*fRRRfffffff
+fff*fffRfffffff
+hff*fffRRRRRRRR
+Mhh*fffffffffff
+Mhh****$fffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+#######@#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+####****#######
+###**WWWWW#####
+###*WWWWWWWW###
+###*##WWWWWWW##
+###*######WW###
+###*###########
+###*###########
+###*###########
+###*####ff#####
+###****$fff####
+#######fffff###
+\end{verbatim}
+\end{tabular}
+
+\section{The A* Algorithm}
+A* search is easily the most widely known search algorithm. It is an informed search strategy in that it uses problem-specific knowledge (other than the problem's definition), known as a heuristic. Informed searches are more efficient than uninformed ones. A* evaluates nodes using $f(n) = g(n) + h(n)$ where $g(n)$ is the action cost to the node $n$, and $h(n)$ is an estimate of the cheapest cost from $n$ to the goal. So when trying to find the least-cost solution, A* follows nodes of the lowest value of $f(n)$. This search is both complete and optimal, provided the heuristic $h(n)$ is \emph{admissible}, that is, it never overestimates the cost to reach the goal. \\
+
+Here is the pseudocode of the guts of the algorithm:
+\begin{verbatim}
+while fringe list is not empty:
+    remove state with lowest f(n)
+    if removed state is goal:
+        then return path
+    for each neighbor of removed state:
+        if neighbor not in fringe list OR new cost is lower than previous:
+            add neighbor to openset
+\end{verbatim}
+
+\subsection{Euclidean Distance}
+First we have A* using the Euclidean distance from $n$ to the goal for its heuristic. Euclidean distance is calculated as $sqrt{(x_1-x_2)^2 + (y_1-y_2)^2}$ where one point is the current node, and the other is the goal.\\
 
 \begin{tabular}{p{2in} p{2in} p{2in}}
 Map & Path & Explored \\
@@ -83,9 +178,7 @@ Mhhffffffffffff
 Mhhffffffffffff
 MMhhhffffffffff
 \end{verbatim}
-
 &
-
 \begin{verbatim}
 MMMhhff@fffffff
 MMMMMhh*fffffff
@@ -100,17 +193,15 @@ fRff****FFFFFff
 fRf**WWWWWFFFFF
 fRf*WWWWWWWWFFF
 fRR*ffWWWWWWWrr
-ffR*RRffffWWfff
-fff*fRRRfffffff
-fff*fffRfffffff
-hff*fffRRRRRRRR
-Mhh*fffffffffff
-Mhh****$fffffff
+ffR***ffffWWfff
+fffff***fffffff
+fffffff*fffffff
+hffffff*RRRRRRR
+Mhhffff*fffffff
+Mhhffff$fffffff
 MMhhhffffffffff
 \end{verbatim}
-
 &
-
 \begin{verbatim}
 #######@#######
 #######*#######
@@ -124,15 +215,90 @@ MMhhhffffffffff
 ####****#######
 ###**WWWWW#####
 ###*WWWWWWWW###
-###*##WWWWWWW##
-###*######WW###
-###*###########
-###*###########
-###*###########
-###*####ff#####
-###****$fff####
-#######fffff###
+###*##WWWWWWW#r
+###***###fWWfff
+#####***#ffffff
+f######*#ffffff
+h######*#RRRRRR
+Mh#####*fffffff
+Mhh###f$fffffff
+MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
 
+\subsection{Taxicab Distance}
+Secondly we have A* using the Taxicab distance from $n$ to the goal for its heuristic. Also known as the Manhattan distance, Taxicab geometry is the sum of the absolute differences between two coordinates, and is calculated as $|(x_1-x_2)| + |(y_1-y_2)|$ where one point is the current node, and the other is the goal.\\
+
+\begin{tabular}{p{2in} p{2in} p{2in}}
+Map & Path & Explored \\
+
+\begin{verbatim}
+MMMhhffffffffff
+MMMMMhhffffffff
+hMMMhhhffFFFfff
+fhMhffFFFFFFFff
+fhhhffFFFFFFFFF
+ffffFFFFFFFFfff
+rrrrfFFFFFFffff
+fffrrffFFFfffff
+RRffrrrfFFFFfff
+fRffffrFFFFFFff
+fRfffWWWWWFFFFF
+fRffWWWWWWWWFFF
+fRRfffWWWWWWWrr
+ffRRRRffffWWfff
+fffffRRRfffffff
+fffffffRfffffff
+hffffffRRRRRRRR
+Mhhffffffffffff
+Mhhffffffffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+MMMhhff@fffffff
+MMMMMhh*fffffff
+hMMMhhh*fFFFfff
+fhMhffF*FFFFFff
+fhhhffF*FFFFFFF
+ffffFFF*FFFFfff
+rrrrfFF*FFFffff
+fffrrff*FFfffff
+RRffrrr*FFFFfff
+fRff****FFFFFff
+fRf**WWWWWFFFFF
+fRf*WWWWWWWWFFF
+fRR*ffWWWWWWWrr
+ffR***ffffWWfff
+fffff***fffffff
+fffffff*fffffff
+hffffff*RRRRRRR
+Mhhffff*fffffff
+Mhhffff$fffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+#######@#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+#######*#######
+####****#######
+###**WWWWW#####
+###*WWWWWWWW###
+###*##WWWWWWW#r
+###***###fWWfff
+#####***#ffffff
+f######*#ffffff
+h######*#RRRRRR
+Mh#####*fffffff
+Mhh###f$fffffff
+MMhhhffffffffff
+\end{verbatim}
+\end{tabular}
 \end{document}
