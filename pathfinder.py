@@ -3,6 +3,7 @@
 import argparse
 import math
 import numpy
+import os
 import sys
 
 
@@ -45,7 +46,7 @@ class Input(object):
 
 class Search(Input):
     """ Class object to find path using assorted search methods."""
-    def __init__(self, options, name=None):
+    def __init__(self, options, name=None, function_name=None):
         super().__init__(options.input_map)
         super()._read_contents()
 
@@ -55,11 +56,17 @@ class Search(Input):
         self._fringe = []
         self._closed = set()
         self._path = {}
+        self._function_name = function_name
+
+        if function_name:
+            self._function = getattr(self, function_name)
 
     def options(self): return self._options
     def name(self): return self._name
     def count(self): return len(self.closed())
     def path(self): return self._path
+    def function_name(self): return self._function_name
+    def function(self): return self._function
 
     def fringe(self): return self._fringe
     def closed(self): return self._closed
@@ -343,32 +350,12 @@ class Search(Input):
         #return numpy.linalg.norm(a-b)
         return math.sqrt(self.square_distance(self.goal(), state))
 
-    def a_star1(self):
-        self.add_fringe(self.start(), 0)
-        while self.fringe():
-            parent, cost = self.get_next_front()
-            if self.goal_test(parent):
-                return parent
-            self.add_closed(parent)
-            for child in self.expand(parent):
-                child_cost = (cost + self.state_cost(child) +
-                        self.euclidean_distance(child))
-                if child not in self.closed():
-                    if self.state_not_in_fringe(child):
-                        self.record_path(parent, child)
-                        self.add_fringe(child, child_cost)
-                    elif self.fringe_higher(child, child_cost):
-                        self.record_path(parent, child)
-                        self.remove_closed(child)
-            self.sort_fringe(tuple_=True)
-        return None
-
     def taxicab_distance(self, state):
         x1, y1 = self.goal()
         x2, y2 = state
         return abs(x1-x2)+abs(y1-y2)
 
-    def a_star2(self):
+    def a_star(self):
         self.add_fringe(self.start(), 0)
         while self.fringe():
             parent, cost = self.get_next_front()
@@ -377,7 +364,7 @@ class Search(Input):
             self.add_closed(parent)
             for child in self.expand(parent):
                 child_cost = (cost + self.state_cost(child) +
-                        self.taxicab_distance(child))
+                        self.function()(child))
                 if child not in self.closed():
                     if self.state_not_in_fringe(child):
                         self.record_path(parent, child)
@@ -387,22 +374,23 @@ class Search(Input):
                         self.remove_closed(child)
             self.sort_fringe(tuple_=True)
         return None
-
 
     def finish(self):
         """ Prints maps and resets lists."""
         self._print_explored()
         self._print_path()
 
-    def _safe_filename(self, suffix):
+    def _safe_filename(self, suffix=None, dirname=None):
         if self.name():
-            return '_'.join((self.name(), suffix))
+            path = '_'.join((self.name(), suffix))
         else:
-            return suffix
+            path = suffix
+        path = os.path.join(dirname, path)
+        return path
 
     def _print_explored(self):
         """ Prints an ASCII map of explored nodes."""
-        filename = self._safe_filename(self.options().explored)
+        filename = self._safe_filename(self.options().explored, 'paths')
         with open(filename, 'w') as f:
             for y in range(0, self.height()):
                 for x in range(0, self.width()):
@@ -420,7 +408,7 @@ class Search(Input):
 
     def _print_path(self):
         """ Prints an ASCII map of the found path from start to goal."""
-        filename = self._safe_filename(self.options().path)
+        filename = self._safe_filename(self.options().path, 'paths')
         with open(filename, 'w') as f:
             for y in range(0, self.height()):
                 for x in range(0, self.width()):
@@ -439,7 +427,7 @@ def parser():
     """ This is the option parser."""
     # TODO: Add type of search option
     parser = argparse.ArgumentParser(description='Find a path.')
-    parser.add_argument('--map', dest='input_map', default='map.txt',
+    parser.add_argument('--map', dest='input_map', default='maps/map.txt',
             help='Path to input map file.')
     parser.add_argument('--path', default='path.txt',
             help='Path to output map file of found path.')
@@ -451,7 +439,10 @@ def parser():
 def main():
     # Parse arguments and store in Args
     options = parser().parse_args()
-    # Create Search object from Map
+    directories = ['maps', 'paths']
+    for directory in directories:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
     # Execute search and print results
     searches = (
@@ -463,11 +454,10 @@ def main():
         Search(options, 'depth_first_cost_limited'),
         Search(options, 'iterative_deepening_cost_limited'),
         Search(options, 'depth_first_recursive'),
-        Search(options, 'a_star1'),
-        Search(options, 'a_star2')
-        )
+        Search(options, 'a_star', 'euclidean_distance'),
+        Search(options, 'a_star', 'taxicab_distance'))
 
-    success_string = "{} method found path from ({}, {}) to ({}, {}),"
+    success_string = "{} method{}found path from ({}, {}) to ({}, {}),"
     success_string += " exploring {} nodes."
     fail_string = "{} method failed to find path."
 
@@ -479,8 +469,13 @@ def main():
         else:
             if result is not None:
                 search._path = search.get_path()
+                if search.function_name():
+                    function_name = ' using ' + search.function_name() + ' heuristic '
+                else:
+                    function_name = ' '
                 print(success_string.format(
-                    search.name(), search.start()[0], search.start()[1],
+                    search.name(), function_name,
+                    search.start()[0], search.start()[1],
                     search.goal()[0], search.goal()[1], search.count()))
                 search.finish()
             else:
@@ -488,11 +483,3 @@ def main():
 
 if __name__ == "__main__":
    sys.exit(main())
-
-
-
-
-
-
-
-
