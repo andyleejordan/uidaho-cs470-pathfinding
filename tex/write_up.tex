@@ -1,4 +1,4 @@
-\documentclass[12pt, letter]{scrartcl}
+\documentclass[12pt, article]{scrartcl}
 \usepackage[english]{babel}
 \usepackage{sectsty}
 \allsectionsfont{\centering \normalfont\scshape}
@@ -15,9 +15,9 @@
 
 \title{	
 \normalfont \normalsize 
-\textsc{University of Idaho: Computer Science} \\ [25pt]
+\textsc{University of Idaho: CS 470 - Artificial Intelligence} \\ [25pt]
 \horrule{0.5pt} \\[0.4cm]
-\huge Project 1a: Pathfinding Part 1 \\
+\huge Project 1: Pathfinding\\
 \horrule{2pt} \\[0.5cm]
 }
 \author{Andrew Schwartzmeyer}
@@ -25,31 +25,43 @@
 
 \begin{document}
 \maketitle % Print the title
+\begin{abstract}
+For this project I implemented a pathfinding program in Python to find the path
+from specified start to goal coordinates on a rectangular ASCII map. The agent
+is able to move up, down, left, and right, but not diagonally. I explored the
+efficiency of multiple common search algorithms used to solve this problem,
+including breadth-first, A* using Euclidean and Taxicab distance heuristics,
+uniform cost, depth-first using a stack, recursive depth-first, and iterative
+deepening.
+\end{abstract}
+\pagebreak
 
 \section{The Breadth-first Algorithm}
-For Part 1a of the Pathfinding project, we're implementing only the breadth-first algorithm. Breadth-first is an algorithm for small problems only, as it has a time and space complexity both of $O(b\sup{d})$. It is both complete and optimal, in that it will find the solution (if one exists) and it will find the solution with the fewest actions (but does not take cost into account, unless a sorted queue is used).
+Breadth-first is an algorithm for small problems only, as it has a time and
+space complexity both of $O(b^{d})$. It is both complete and optimal, in that it
+will find the solution (if one exists) and it will find the solution with the
+fewest actions (but does not take cost into account, unless a sorted queue is
+used).\\
 
 The algorithm is simple: 
-\begin{enumerate}
-    \item[1. ] Create a fringe list
-    \item[2. ] Queue root node (start state) onto fringe list
-    \item[3. ] \emph{while} fringe list is not empty:
-        \begin{enumerate}
-    \item[4. ] Remove first state from list (do not pop last like a stack)
-    \item[5. ] \emph{if} removed state is goal
-        \begin{enumerate}
-    \item[6. ] \emph{then} return path
-        \end{enumerate}
-    \item[7. ] \emph{else} expand state and add new nodes to list
-        \end{enumerate}
-\end{enumerate}
-
-\section{Pathfinding}
-Given the sample map:
 \begin{verbatim}
-15 20
-7 0
-7 18
+1.  Create a fringe list
+2.  Queue root node (start state) onto fringe list
+3.  while fringe list is not empty:
+4.      Remove first state from list (do not pop last like a stack)
+5.      if removed state is goal
+6.          then return path
+7.      else expand state and add new nodes to list
+\end{verbatim}
+
+The sample map is of size 15 by 20, with a start coordinate of (7, 0) and
+goal coordinate of (7, 18). In the path and explored maps, `@' is the starting
+point, `*' is the path, `\$' is the goal, and `\#' is an explored state. \\
+
+\begin{tabular}{p{2in} p{2in} p{2in}}
+Map & Path & Explored \\
+
+\begin{verbatim}
 MMMhhffffffffff
 MMMMMhhffffffff
 hMMMhhhffFFFfff
@@ -72,7 +84,8 @@ Mhhffffffffffff
 MMhhhffffffffff
 \end{verbatim}
 
-My program found this path:
+&
+
 \begin{verbatim}
 MMMhhff@fffffff
 MMMMMhh*fffffff
@@ -96,7 +109,8 @@ Mhh****$fffffff
 MMhhhffffffffff
 \end{verbatim}
 
-And explored these nodes:
+&
+
 \begin{verbatim}
 #######@#######
 #######*#######
@@ -108,23 +122,17 @@ And explored these nodes:
 #######*#######
 #######*#######
 ####****#######
-###**##########
-###*##WWWW#####
+###**WWWWW#####
+###*WWWWWWWW###
+###*##WWWWWWW##
 ###*######WW###
 ###*###########
 ###*###########
 ###*###########
-###*###########
-###*###########
-###****$ff#####
-########fff####
+###*####ff#####
+###****$fff####
+#######fffff###
 \end{verbatim}
-
-Where `@' is the starting point, `*' is the path, `\$' is the goal, and `\#' is an explored node.
-
-\section{Results}
-I took care to implement my program with speed in mind, considering both that it is written in Python and using a slow search algorithm. I used tuples and sets wherever possible to eliminate what bottle-necks I could. My program actually ran faster than expected, even with a map quadruple in size, it finished before I had the chance to blink. However, even a 50x50 map is relatively small, and this program in its current iteration will be slow.
-
-It found the path as expected: optimal in regards to actions (but not taking cost into account) but inefficient in its means of getting there. If you look at the explored map, almost every node was touched.
+\end{tabular}
 
 \end{document}
