@@ -6,6 +6,8 @@ import numpy
 import os
 import sys
 
+sys.setrecursionlimit(10000)
+
 
 class Input(object):
     """ Class object to parse input."""
@@ -243,7 +245,6 @@ class Search(Input):
                     self.add_fringe(child)
         return None
 
-
     def depth_limited(self, limit=5000):
         self.add_fringe(self.start(), 0)
         while self.fringe():
@@ -362,22 +363,25 @@ class Search(Input):
                         return result
         return None
 
-    def finish(self):
+    def finish(self, heuristic=None):
         """ Prints maps and resets lists."""
-        self._print_explored()
-        self._print_path()
+        self._print_explored(heuristic)
+        self._print_path(heuristic)
 
-    def _safe_filename(self, suffix=None, dirname=None):
+    def _safe_filename(self, suffix=None, dirname=None, heuristic=None):
         if self.name():
-            path = '_'.join((self.name(), suffix))
+            if heuristic:
+                path = '_'.join((self.name(), heuristic, suffix))
+            else:
+                path = '_'.join((self.name(), suffix))
         else:
             path = suffix
         path = os.path.join(dirname, path)
         return path
 
-    def _print_explored(self):
+    def _print_explored(self, heuristic=None):
         """ Prints an ASCII map of explored nodes."""
-        filename = self._safe_filename(self.options().explored, 'paths')
+        filename = self._safe_filename(self.options().explored, 'paths', heuristic)
         with open(filename, 'w') as f:
             for y in range(0, self.height()):
                 for x in range(0, self.width()):
@@ -393,9 +397,9 @@ class Search(Input):
                         f.write(self.graph()[y][x])
                 f.write('\n')
 
-    def _print_path(self):
+    def _print_path(self, heuristic=None):
         """ Prints an ASCII map of the found path from start to goal."""
-        filename = self._safe_filename(self.options().path, 'paths')
+        filename = self._safe_filename(self.options().path, 'paths', heuristic)
         with open(filename, 'w') as f:
             for y in range(0, self.height()):
                 for x in range(0, self.width()):
@@ -435,14 +439,14 @@ def main():
     searches = (
         Search(options, 'breadth_first'),
         Search(options, 'uniform_cost', 'no_heuristic'),
+        Search(options, 'a_star', 'euclidean_distance'),
+        Search(options, 'a_star', 'taxicab_distance'),
         Search(options, 'depth_first'),
         Search(options, 'depth_limited'),
         Search(options, 'iterative_deepening_depth_limited'),
         Search(options, 'depth_first_cost_limited'),
-        Search(options, 'iterative_deepening_cost_limited'),
-        Search(options, 'depth_first_recursive'),
-        Search(options, 'a_star', 'euclidean_distance'),
-        Search(options, 'a_star', 'taxicab_distance'))
+        Search(options, 'iterative_deepening_cost_limited'))
+        #Search(options, 'depth_first_recursive'),
 
     success_string = "{} method{}found path from ({}, {}) to ({}, {}),"
     success_string += " exploring {} nodes."
@@ -464,7 +468,7 @@ def main():
                     search.name(), function_name,
                     search.start()[0], search.start()[1],
                     search.goal()[0], search.goal()[1], search.count()))
-                search.finish()
+                search.finish(search.function_name())
             else:
                 print(fail_string.format(search.name()))
 
