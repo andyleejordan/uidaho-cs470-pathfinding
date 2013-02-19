@@ -200,7 +200,7 @@ class Search(Input):
         while self.fringe():
             parent, cost = self.get_next_front()
             if self.goal_test(parent):
-                return parent
+                return parent, cost
             self.add_closed(parent)
             for child in self.expand(parent):
                 child_cost = (cost + self.state_cost(child) +
@@ -229,7 +229,9 @@ class Search(Input):
         return None
 
     def uniform_cost(self):
-        return self.a_star()
+        node, cost = self.a_star()
+        print("Uniform cost is: {}".format(cost))
+        return node
 
     def depth_first(self):
         self.add_fringe(self.start())
