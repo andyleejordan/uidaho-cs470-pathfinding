@@ -135,15 +135,13 @@ class Search(Input):
                 return False
         return True
 
-    def fringe_higher(self, state, cost, equal=True, append=True):
+    def fringe_higher(self, state, cost, append=True):
         for i in self._fringe:
             if state == i[0]:
-                if i[1] > cost:
+                if i[1] >= cost:
                     self.remove_fringe(i)
                     if append:
                         self.add_fringe(state, cost)
-                    return True
-                if i[1] == cost and equal:
                     return True
                 else:
                     return False
@@ -160,7 +158,7 @@ class Search(Input):
         else:
             return False
 
-    def expand(self, state, sort=False):
+    def expand(self, state, sort=False, reverse=False):
         """ Returns valid N, E, S, W coordinates as list."""
         result = []
         x, y = state
@@ -174,7 +172,8 @@ class Search(Input):
                 result.append(neighbor)
         if sort:
             result.sort(key=lambda state: self.state_cost(state))
-            result.reverse()
+            if reverse:
+                result.reverse()
         return result
 
     def no_heuristic(self, drop=None):
@@ -250,7 +249,7 @@ class Search(Input):
         while self.fringe():
             parent, depth = self.get_next_end()
             if depth >= limit:
-                continue # HOLY FUCKING SHIT THIS IS IMPORTANT
+                continue
             if self.goal_test(parent):
                 return parent
             self.add_closed(parent)
@@ -281,16 +280,16 @@ class Search(Input):
             if self.goal_test(parent):
                 return parent
             cutoff = False
-            for child in self.expand(parent):
-                if (self.state_not_in_fringe(child) or
-                        self.fringe_higher(child, depth+1, append=False)):
-                    result = depth_first_visit(child, depth+1, limit)
+            for child in self.expand(parent, sort=True, reverse=False):
+                self.fringe_higher(child, depth+1, append=False)
+                self.sort_fringe(tuple_=True)
+                if self.state_not_in_fringe(child):
                     self.record_path(parent, child)
+                    result = depth_first_visit(child, depth+1, limit)
                     if result == 'cutoff':
                         cutoff = True
                     if result is not None:
                         return result
-            self.remove_fringe((parent, depth))
             if cutoff:
                 return 'cutoff'
             return None
@@ -310,11 +309,11 @@ class Search(Input):
         while self.fringe():
             parent, path_cost = self.get_next_end()
             if path_cost > limit:
-                continue # HOLY FUCKING SHIT THIS IS IMPORTANT
+                continue
             if self.goal_test(parent):
                 return parent
             self.add_closed(parent)
-            for child in self.expand(parent):
+            for child in self.expand(parent, sort=True, reverse=True):
                 child_path_cost = path_cost + self.state_cost(child)
                 if child not in self.closed():
                     if self.state_not_in_fringe(child):
@@ -342,7 +341,7 @@ class Search(Input):
                 return parent
             gray.add(parent)
             found = False
-            for child in self.expand(parent):
+            for child in self.expand(parent, sort=True):
                 if child not in gray and child not in self.closed():
                     self.record_path(parent, child)
                     result = depth_first_visit(child)
@@ -442,11 +441,9 @@ def main():
         Search(options, 'a_star', 'euclidean_distance'),
         Search(options, 'a_star', 'taxicab_distance'),
         Search(options, 'depth_first'),
-        Search(options, 'depth_limited'),
         Search(options, 'iterative_deepening_depth_limited'),
-        Search(options, 'depth_first_cost_limited'),
         Search(options, 'iterative_deepening_cost_limited'))
-        #Search(options, 'depth_first_recursive'),
+        #Search(options, 'iterative_deepening_depth_limited_recursive'))
 
     success_string = "{} method{}found path from ({}, {}) to ({}, {}),"
     success_string += " exploring {} nodes."
