@@ -230,7 +230,6 @@ class Search(Input):
 
     def uniform_cost(self):
         node, cost = self.a_star()
-        print("Uniform cost is: {}".format(cost))
         return node
 
     def depth_first(self):
@@ -459,6 +458,9 @@ def main():
         else:
             if result is not None:
                 search._path = search.get_path()
+                path_cost = 0
+                for i in search._path:
+                    path_cost += search.state_cost(i)
                 if search.function_name():
                     function_name = ' using ' + search.function_name() + ' heuristic '
                 else:
@@ -467,6 +469,8 @@ def main():
                     search.name(), function_name,
                     search.start()[0], search.start()[1],
                     search.goal()[0], search.goal()[1], search.count()))
+                print('{} {} path cost is {}'.format(
+                    search.name(), function_name, path_cost))
                 search.finish(search.function_name())
             else:
                 print(fail_string.format(search.name()))
