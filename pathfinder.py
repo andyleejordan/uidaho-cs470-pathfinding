@@ -308,7 +308,7 @@ class Search(Input):
         self.add_fringe(self.start(), 0)
         while self.fringe():
             parent, path_cost = self.get_next_end()
-            if path_cost > limit:
+            if path_cost >= limit:
                 continue
             if self.goal_test(parent):
                 return parent
