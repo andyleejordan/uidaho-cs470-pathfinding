@@ -49,7 +49,7 @@ In the path and explored maps, `@' is the starting point, `*' is the path, `\$' 
 The sample map is of size 15 by 20, with a start coordinate of (7, 0) and goal coordinate of (7, 18). \\
 
 \section{The Breadth-first Algorithm}
-Breadth-first is an algorithm for small problems only, as it has a time and space complexity both of $O(b^{d})$. Essentially, it examines every possible until it reaches the goal. Beacuse of this, it is both complete and optimal, in that it will find the solution (if one exists) and it will find the solution with the lowest cost, provided each move cost the same. \\
+Breadth-first is an algorithm for small problems only, as it has a time and space complexity both of $O(b^{d})$. Essentially, it examines every possible path until it reaches the goal. It does this by visiting a node, then visiting all its neighbors, then for each of those neighbors, it visits their neighbors as well. Beacuse of this, it is both complete and optimal, in that it will find the solution (if one exists) and it will find the solution with the lowest cost, provided each move cost the same. \\
 
 The algorithm is simple: 
 
@@ -133,6 +133,81 @@ MMhhhffffffffff
 ###*####ff#####
 ###****$fff####
 #######fffff###
+\end{verbatim}
+\end{tabular}
+
+\section{Depth-first search}
+Depth-first search is the anti-thesis of breadth-first: instead of exploring neighbors before moving on, it explores as far as possible along each branch before zipping back and exploring the next. Its time complexity is $O(b^d)$, and its space complexity is $O(bd)$.
+\begin{tabular}{p{2in} p{2in} p{2in}}
+Map & Path & Explored \\
+
+\begin{verbatim}
+MMMhhffffffffff
+MMMMMhhffffffff
+hMMMhhhffFFFfff
+fhMhffFFFFFFFff
+fhhhffFFFFFFFFF
+ffffFFFFFFFFfff
+rrrrfFFFFFFffff
+fffrrffFFFfffff
+RRffrrrfFFFFfff
+fRffffrFFFFFFff
+fRfffWWWWWFFFFF
+fRffWWWWWWWWFFF
+fRRfffWWWWWWWrr
+ffRRRRffffWWfff
+fffffRRRfffffff
+fffffffRfffffff
+hffffffRRRRRRRR
+Mhhffffffffffff
+Mhhffffffffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+*******@fffffff
+*MMMMhhffffffff
+***************
+fhMhffFFFFFFFf*
+***************
+*fffFFFFFFFFfff
+***************
+fffrrffFFFffff*
+***************
+*RffffrFFFFFFff
+****#WWWWWFFFFF
+fRf*WWWWWWWWFFF
+****ffWWWWWWWrr
+*fRRRRffffWWfff
+***************
+fffffffRffffff*
+***************
+*hhffffffffffff
+*******$fffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+*******@fffffff
+*MMMMhhffffffff
+***************
+fhMhffFFFFFFFf*
+***************
+*fffFFFFFFFFfff
+***************
+fffrrffFFFffff*
+***************
+*RffffrFFFFFFff
+****fWWWWWFFFFF
+fRf*WWWWWWWWFFF
+****ffWWWWWWWrr
+*fRRRRffffWWfff
+***************
+fffffffRffffff*
+***************
+*hhffffffffffff
+*******$fffffff
+MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
 
@@ -301,6 +376,7 @@ Mhh###f$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+
 \section{Uniform-cost Algorithm}
 Uniform-cost search is actually a special implementation of the A* algorithm, and it is also both complete and optimal. In fact, in the code, uniform-cost search simply calls the A* subroutine with a ``monotonic heuristic.'' In the cost calculation formula $f(n) = g(n) + h(n)$, $h(n)$ is zero for uniform-cost search, hence its name. It does, however, still take $g(n)$ (specific movement costs) into account. Interestingly, the breadth-first algorithm is itself a special case of uniform-cost, where instead of taking into account a varied movement cost, all costs are the same, and thus it searches instead for the shortest path.
 
@@ -373,6 +449,83 @@ MMhhhffffffffff
 #######*###R###
 M######*#ffffff
 Mhh###f$fffffff
+MMhhhffffffffff
+\end{verbatim}
+\end{tabular}
+
+\section{Iterative Deepening Algorithm}
+Iterative deepening depth-first search is an interesting and tricky to implement heuristic. The strategy is to repeatedly run a depth-limited search, increasing the depth with each iteration until the goal is found. It is equivalent to a breadth-first search but uses far less memory. Each iteration visits nodes in the same order as a depth-first search, but the cumulative order is akin to a breadth-first search. Because of this, it has both the space-efficiency of depth-first, and completeness and optimality of breadth-first. Its space complexity is $O(bd)$, and its time complexity is $O(b^d)$. \\
+
+This particular implementation runs a cost-limited search. Instead of limiting the depth of the search, it limits the cost of the path, it expands the nodes in the order of increasing path cost, and iteratively increases the cost limit until the solution is found. This is also known as an iterative lengthening search, but is not commonly used because of its substantial overhead, and because it does not find the truly lowest cost path (such as that given by uniform-cost search). \\
+\begin{tabular}{p{2in} p{2in} p{2in}}
+Map & Path & Explored \\
+
+\begin{verbatim}
+MMMhhffffffffff
+MMMMMhhffffffff
+hMMMhhhffFFFfff
+fhMhffFFFFFFFff
+fhhhffFFFFFFFFF
+ffffFFFFFFFFfff
+rrrrfFFFFFFffff
+fffrrffFFFfffff
+RRffrrrfFFFFfff
+fRffffrFFFFFFff
+fRfffWWWWWFFFFF
+fRffWWWWWWWWFFF
+fRRfffWWWWWWWrr
+ffRRRRffffWWfff
+fffffRRRfffffff
+fffffffRfffffff
+hffffffRRRRRRRR
+Mhhffffffffffff
+Mhhffffffffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+MMMhhff@fffffff
+MMMMMhh*fffffff
+hMMMhhh**FFFfff
+fhMhffFF*FFFFff
+fhhhffFF*FFFFFF
+ffffFFFF*FFFfff
+rrrrfFFF*FFffff
+fffrrffF*Ffffff
+RRffrrr**FFFfff
+fRff****FFFFFff
+fRf**WWWWWFFFFF
+fRf*WWWWWWWWFFF
+fRR*ffWWWWWWWrr
+ffR***ffffWWfff
+fffff***fffffff
+fffffff*fffffff
+hffffff*RRRRRRR
+Mhhffff*fffffff
+Mhhffff$fffffff
+MMhhhffffffffff
+\end{verbatim}
+&
+\begin{verbatim}
+MMMhhff@fffffff
+MMMMMhh*fffffff
+hMMMhhh**FFFfff
+fhMhffFF*FFFFff
+fhhhffFF*FFFFFF
+ffffFFFF*FFFfff
+rrrrfFFF*FFffff
+fffrrffF*Ffffff
+RRffrrr**FFFfff
+fRff****FFFFFff
+fRf**WWWWWFFFFF
+fRf*WWWWWWWWFFF
+fRR*ffWWWWWWWrr
+ffR***ffffWWfff
+fffff***fffffff
+fffffff*fffffff
+hffffff*RRRRRRR
+Mhhffff*fffffff
+Mhhffff$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
