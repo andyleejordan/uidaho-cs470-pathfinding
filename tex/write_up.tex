@@ -26,11 +26,13 @@
 \begin{document}
 \maketitle % Print the title
 \begin{abstract}
-For this project I implemented a pathfinding program in Python to find the path from specified start to goal coordinates on a rectangular ASCII map. The agent is able to move up, down, left, and right, but not diagonally. I explored the efficiency of multiple common search algorithms used to solve this problem, including breadth-first, A* using Euclidean and Taxicab distance heuristics, uniform-cost, depth-first using a stack, recursive depth-first, and iterative deepening.
+For this project I implemented a pathfinding program in Python to find the path from specified start to goal coordinates on a rectangular ASCII map. The agent is able to move up, down, left, and right, but not diagonally. I explored the efficiency of multiple common search algorithms used to solve this problem, including breadth-first, A* using Euclidean and Taxicab distance heuristics, uniform-cost, depth-first using a stack, recursive depth-first, and iterative deepening. \\
 \end{abstract}
 \pagebreak
-\section{The Maps}
-The maps used in this project are rectangular grids of ASCII characters. We have:
+\section{Introduction}
+Pathfinding is a common problem in artificial intelligence. A map can be represented as a graph, with a specific start point as the root node, and another point as the goal node. With this graph representation of the map, graph traversal algorithms like the following can be used to find the shortest (or least cost) path. \\
+\subsection{Maps}
+The maps used in this project are rectangular grids of ASCII characters. We have: \\
 \begin{center}
 \begin{tabular}{l | l | l}
 Character & Meaning & Movement cost \\ \hline
@@ -135,6 +137,8 @@ MMhhhffffffffff
 #######fffff###
 \end{verbatim}
 \end{tabular}
+\paragraph{Results}
+From these results we can see the algorithm found the shortest possible path, but does not take into account cost. The space complexity of breadth-first is also demonstrated, with it exploring 267 nodes of 300, or 89 percent. It's path cost is an acceptable figure of 70. \\
 
 \section{Depth-first search}
 Depth-first search is the anti-thesis of breadth-first: instead of exploring neighbors before moving on, it explores as far as possible along each branch before zipping back and exploring the next. Its time complexity is $O(b^d)$, and its space complexity is $O(bd)$.
@@ -210,6 +214,8 @@ fffffffRffffff*
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+\paragraph{Results}
+Notice that depth-first is not optimal. I certainly would not want to take that path, considering its cost is 417; however, it was able to find that path by exploring only 123 nodes, or 41 percent. The space complexity of depth-first can be very useful. \\
 
 \section{The A* Algorithm}
 A* search is easily the most widely known search algorithm. It is an informed search strategy in that it uses problem-specific knowledge (other than the problem's definition), known as a heuristic. Informed searches are more efficient than uninformed ones. A* evaluates nodes using $f(n) = g(n) + h(n)$ where $g(n)$ is the action cost to the node $n$, and $h(n)$ is an estimate of the cheapest cost from $n$ to the goal. So when trying to find the least-cost solution, A* follows nodes of the lowest value of $f(n)$. This search is both complete and optimal, provided the heuristic $h(n)$ is \emph{admissible}, that is, it never overestimates the cost to reach the goal. \\
@@ -300,6 +306,8 @@ Mhh###f$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+\paragraph{Results}
+With the Euclidean distance heuristic, A* found the path having explored 218 nodes (73 percent). Although this is not the cheapest possible path (like that found by uniform cost search) with a cost of 63, it is definitely acceptable. \\
 
 \subsection{Taxicab Distance}
 Secondly we have A* using the Taxicab distance from $n$ to the goal for its heuristic. Also known as the Manhattan distance, Taxicab geometry is the sum of the absolute differences between two coordinates, and is calculated as $|(x_1-x_2)| + |(y_1-y_2)|$ where one point is the current node, and the other is the goal.\\
@@ -376,9 +384,11 @@ Mhh###f$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+\paragraph{Results}
+The results are almost the same as with the Euclidean heuristic. With the Taxicab distance heuristic, A* found the path having explored 217 nodes (72 percent), and with a path cost of 63 as well. On more complex maps this is a greater difference, but these tests are not shown for brevity (though their results will be discussed). \\
 
 \section{Uniform-cost Algorithm}
-Uniform-cost search is actually a special implementation of the A* algorithm, and it is also both complete and optimal. In fact, in the code, uniform-cost search simply calls the A* subroutine with a ``monotonic heuristic.'' In the cost calculation formula $f(n) = g(n) + h(n)$, $h(n)$ is zero for uniform-cost search, hence its name. It does, however, still take $g(n)$ (specific movement costs) into account. Interestingly, the breadth-first algorithm is itself a special case of uniform-cost, where instead of taking into account a varied movement cost, all costs are the same, and thus it searches instead for the shortest path.
+Uniform-cost search is actually a special implementation of the A* algorithm, and it is also both complete and optimal. In fact, in the code, uniform-cost search simply calls the A* subroutine with a ``monotonic heuristic.'' In the cost calculation formula $f(n) = g(n) + h(n)$, $h(n)$ is zero for uniform-cost search, hence its name. It does, however, still take $g(n)$ (specific movement costs) into account. Interestingly, the breadth-first algorithm is itself a special case of uniform-cost, where instead of taking into account a varied movement cost, all costs are the same, and thus it searches instead for the shortest path. \\
 
 \begin{tabular}{p{2in} p{2in} p{2in}}
 Map & Path & Explored \\
@@ -452,11 +462,13 @@ Mhh###f$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+\paragraph{Results}
+Uniform cost search provides us with the cheapest possible path cost of 58, having explored 241 nodes, or 80 percent, which is unfortunately close to that of breadth first. \\
 
 \section{Iterative Deepening Algorithm}
 Iterative deepening depth-first search is an interesting and tricky to implement heuristic. The strategy is to repeatedly run a depth-limited search, increasing the depth with each iteration until the goal is found. It is equivalent to a breadth-first search but uses far less memory. Each iteration visits nodes in the same order as a depth-first search, but the cumulative order is akin to a breadth-first search. Because of this, it has both the space-efficiency of depth-first, and completeness and optimality of breadth-first. Its space complexity is $O(bd)$, and its time complexity is $O(b^d)$. \\
 
-This particular implementation runs a cost-limited search. Instead of limiting the depth of the search, it limits the cost of the path, it expands the nodes in the order of increasing path cost, and iteratively increases the cost limit until the solution is found. This is also known as an iterative lengthening search, but is not commonly used because of its substantial overhead, and because it does not find the truly lowest cost path (such as that given by uniform-cost search). \\
+This particular implementation runs a cost-limited search. Instead of limiting the depth of the search, it limits the cost of the path, it expands the nodes in the order of increasing path cost, and iteratively increases the cost limit until the solution is found. This is also known as an iterative lengthening search, but is not commonly used because of its substantial overhead, and because it does not find the truly lowest cost path (such as that given by uniform-cost search). However, its space complexity and ability to find a relatively cheap path is very useful. \\ \\
 \begin{tabular}{p{2in} p{2in} p{2in}}
 Map & Path & Explored \\
 
@@ -529,6 +541,10 @@ Mhhffff$fffffff
 MMhhhffffffffff
 \end{verbatim}
 \end{tabular}
+\paragraph{Results}
+Iterative deepening depth-limited (while ignoring repeated states) found a path of cost 69, which while not the cheapest, is incredibly acceptable considering it explored only 35 nodes (12 percent). However, keep in mind that this was the final number of explored nodes, and that it had to repeatedly run the search close to 70 times to acheieve that. Fortunately, these repeated searches aren't too costly as the previous paths started at cost 0, increasing each iteration until the final path was reached. \\
+
+\section{Cumulative Results}
 
 %\begin{tabular}{p{2in} p{2in} p{2in}}
 %Map & Path & Explored \\
